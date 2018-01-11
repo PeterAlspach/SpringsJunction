@@ -1,0 +1,56 @@
+---
+title: "Springs Junction Rainfall"
+subtitle: "Data from the automatic rain gauge"
+author: "Peter Alspach"
+date: "January 2018"
+output:
+  html_document:
+  # html_notebook:
+  theme: spacelab
+toc: yes
+toc_depth: 5
+toc_float: yes
+code_folding: hide
+---
+  
+```{r setup, include=FALSE}
+# knitr::opts_chunk$set(echo=TRUE, cache=TRUE, error=TRUE)
+knitr::opts_chunk$set(echo=TRUE, results=FALSE, cache=TRUE, error=TRUE)
+```
+
+## Get the data
+The data is first obtained from the (http://data.wcrc.govt.nz/cgi-bin/hydwebserver.cgi/points/samples/export?point=597)[West Coast Regional Council], and saved in C:/Users/PeterAlspach/downloads/github/SpringsJunction/Rainfalldepth.csv. Choose the desired date range, but leave the Format and Aggregate as 'Default'.  This can then be read into R, and manipulated a little.
+
+```{r getData}
+rainfall <- read.csv('Rainfall_depth.csv', header=FALSE, skip=1)
+names(rainfall) <- c('dateTime','rain')
+rainfall$date <- as.Date(substring(rainfall[,1], 1, 8), format='%d/%m/%y')
+rainfall <- rainfall[nrow(rainfall):1,]
+rainfall$time <- substring(rainfall[,1], 10)
+```
+
+```{r findRuns}
+# It is extremely unlikely that the 0.5 cup will tip twice in a minute.  This code checks for 
+# such occurrences
+tt <- rle(as.character(rainfall$dateTime))$lengths
+rainfall$toChk <- rep(tt, tt)
+```
+
+The raw data is aggregated daily, as is the data after removing points where the gauge tipped more than once in a minute^[Note, the checking could be improved so that if there is only one tip in a minute, but this is immediately preceded or succeeded by instances of two or more tips per minute these data are also removed.].
+
+```{r aggregate}
+aggRain <- aggregate(rainfall$rain, list(rainfall$date), sum)
+mthRain <- aggregate(aggRain[,2], list(substring(aggRain[,1], 1, 7)), sum)
+lmt <- 1 # maximum number of tips per minute
+aggCorr <- aggregate(rainfall[rainfall$toChk <= lmt,'rain'], 
+                     list(rainfall[rainfall$toChk <= lmt,'date']), sum)
+mthCorr <- aggregate(aggCorr[,2], list(substring(aggCorr[,1], 1, 7)), sum)
+```
+
+```{r plotRaw, fig.height=8, fig.cap='Uncorrected rainfall'}
+with(aggCorr, barplot(x))
+```
+
+```{r plotCorr, fig.height=8, fig.cap='Corrected rainfall'}
+with(aggChkd, barplot(x))
+```
