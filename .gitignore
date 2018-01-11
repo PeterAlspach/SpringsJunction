@@ -33,13 +33,13 @@ DataManagement/reexceltipsandtricks/
 *.csv
 *.doc
 *.docx
-# *.html
+*.html
 # !*.nb.html
 *.lnk
 *.mediawiki
 *.pdf
-# *.png
-# *.jpg
+*.png
+*.jpg
 *.svg
 *.svn
 *.swf
