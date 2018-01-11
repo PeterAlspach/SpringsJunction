@@ -1,47 +1,48 @@
-# Windows image file caches
-Thumbs.db
-ehthumbs.db
+.gitignore
 
-# Folder config file
-Desktop.ini
+# R files (history etc)
+*.RData
+*.Rhistory
+*.Rproj
 
-# Recycle Bin used on file shares
-$RECYCLE.BIN/
+# Example code in package build process
+*-Ex.R
+.Rproj.user
 
-# Windows Installer files
-*.cab
-*.msi
-*.msm
-*.msp
 
-# Windows shortcuts
+# Sweave related files
+*.aux
+*.bbl
+*.blg
+*.gz
+*.log
+*.sty
+*.tex
+
+# Sweave cache related files
+__globals
+__objects
+__packages
+*.rdb
+*.rdx
+
+# Folders
+DataManagement/reexceltipsandtricks/
+
+# Other files
+*.csv
+*.doc
+*.docx
+# *.html
+# !*.nb.html
 *.lnk
-
-# =========================
-# Operating System Files
-# =========================
-
-# OSX
-# =========================
-
-.DS_Store
-.AppleDouble
-.LSOverride
-
-# Thumbnails
-._*
-
-# Files that might appear in the root of a volume
-.DocumentRevisions-V100
-.fseventsd
-.Spotlight-V100
-.TemporaryItems
-.Trashes
-.VolumeIcon.icns
-
-# Directories potentially created on remote AFP share
-.AppleDB
-.AppleDesktop
-Network Trash Folder
-Temporary Items
-.apdisk
+*.mediawiki
+*.pdf
+# *.png
+# *.jpg
+*.svg
+*.svn
+*.swf
+*.txt
+# *.xls
+# *.xlsx
