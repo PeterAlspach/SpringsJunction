@@ -17,7 +17,7 @@
 *.gz
 *.log
 *.sty
-*.tex
+#*.tex
 
 # Sweave cache related files
 __globals
@@ -39,7 +39,7 @@ DataManagement/reexceltipsandtricks/
 *.mediawiki
 *.pdf
 *.png
-*.jpg
+#*.jpg
 *.svg
 *.svn
 *.swf
