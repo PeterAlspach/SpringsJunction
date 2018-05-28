@@ -1,4 +1,4 @@
----
+li---
 title: "Springs Junction Rainfall"
 subtitle: "Data from the automatic rain gauge"
 author: "Peter Alspach"
