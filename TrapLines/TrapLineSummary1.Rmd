@@ -3,13 +3,14 @@ title: "Maruia Trap-lines: Monthly Summary"
 author: "Peter Alspach"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
+    pdf_document:
   # html_document:
-  html_notebook:
+  # html_notebook:
     theme: spacelab
     toc: yes
     toc_depth: 5
-    toc_float: yes
-    code_folding: hide
+    # toc_float: yes
+    # code_folding: hide
 ---
 
 ```{r setup, include=FALSE}
@@ -37,7 +38,7 @@ tl$jDay <- julian.Date(as.Date(tl$Date.Checked), origin=as.Date('2017-12-31'))
 # apply(ttTab, 1, function(x) dimnames(ttTab)[[2]][x!=0])
 ```
 
-```{r getReady}
+```{r getReady, echo=FALSE}
 # Set the cut-off dates for the monthly intervals
 lastDate <- sort(tl$Date.Checked, decreasing=TRUE)[1]
 yr <- as.integer(substring(lastDate, 1, 4))
@@ -58,7 +59,7 @@ The summary is for the most recent monthly interval (`r paste(month.name[(mth-1)
 
 ## The most recent monthly interval
 
-```{r currMth}
+```{r currMth, echo=FALSE}
 # Subset tl to the data for the current month only
 currMth <- tl[obsMth==levels(obsMth)[mth-1],]
 
@@ -94,7 +95,7 @@ catch <- cbind(catch, round(apply(catch[,-1], 2, function(x) 100*x/catch[,1]), 1
 
 The table (below) summarises the number of pests caught in the most recent monthly interval for each line.  The first column is the number of traps^[In some cases traps may be missing or not found at checking, but this is disregarded in this summary], followed by the number which were sprung but empty.  The remaining columns (in blue) give the numbers of rats, stoats, weasels, other mammals (e.g., cats, ferrets, rabbits) and the total mammals.  
 
-```{r currMthN}
+```{r currMthN, echo=FALSE}
 kable(catch[, 1:(length(stdStat)+3)]) %>%
   kable_styling(full_width=FALSE) %>%
   column_spec(length(stdStat)+4, bold=TRUE) %>%
@@ -105,7 +106,7 @@ kable(catch[, 1:(length(stdStat)+3)]) %>%
 
 The next table is similar, except that the numbers are expressed as percentages of the total number of traps on the line.
 
-```{r currMthPC}
+```{r currMthPC, echo=FALSE}
 kable(catch[, c(1, ((length(stdStat)+4):ncol(catch)))]) %>%
   kable_styling(full_width=FALSE) %>%
   column_spec(length(stdStat)+4, bold=TRUE) %>%
@@ -118,7 +119,7 @@ kable(catch[, c(1, ((length(stdStat)+4):ncol(catch)))]) %>%
 
 ### Mammals caught by line
 
-```{r yrToDate}
+```{r yrToDate, echo=FALSE}
 # First tabulate the number of pests caught
 trap1 <- table(tl$Line, tl$Trap.1)
 trap2 <- table(tl$Line, tl$Trap.2)
@@ -151,7 +152,7 @@ catch <- cbind(catch, round(apply(catch[,-1], 2, function(x) 100*x/(catch[,1]*(m
 
 The first table (below) summarises the number of pests caught in the year to date for each line.  The first column is the number of traps, followed by the number which were sprung but empty.  The remaining columns (in blue) give the numbers of rats, stoats, weasels, other mammals (e.g., cats, ferrets, rabbits) and the total mammals.  
 
-```{r yrToDateN}
+```{r yrToDateN, echo=FALSE}
 kable(catch[, 1:(length(stdStat)+3)]) %>%
   kable_styling(full_width=FALSE) %>%
   column_spec(length(stdStat)+4, bold=TRUE) %>%
@@ -162,7 +163,7 @@ kable(catch[, 1:(length(stdStat)+3)]) %>%
 
 Next, the data are presented as numbers caught per trap per month (x 100) for each line.  This is analogous to the second table in the current month section which gave the percentages.
 
-```{r yrToDatePC}
+```{r yrToDatePC, echo=FALSE}
 kable(catch[, c(1, ((length(stdStat)+4):ncol(catch)))]) %>%
   kable_styling(full_width=FALSE) %>%
   column_spec(length(stdStat)+4, bold=TRUE) %>%
