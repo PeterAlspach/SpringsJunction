@@ -14,15 +14,16 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo=TRUE, cache=TRUE, error=TRUE)
+knitr::opts_chunk$set(echo=FALSE, cache=TRUE, error=TRUE)
+library(knitr)
 library(kableExtra)
 ```
 ## Introduction
 
-```{r readData, echo=FALSE}
+```{r readData}
 # Set the working directory and read the data
 setwd('~/GitHub/SpringsJunction/TrapLines')
-tl <- read.csv('traplines.csv', header=TRUE, sep=',', stringsAsFactors=FALSE)
+tl <- read.csv('TrapCatches.csv', header=TRUE, sep=',', stringsAsFactors=FALSE)
 
 # Rename traps with only a single digit 'd' to '0d'
 relNo <- tl[grep('[[:upper:]][[:digit:]]{1}$', tl$Tag.No), 'Tag.No']
@@ -38,7 +39,7 @@ tl$jDay <- julian.Date(as.Date(tl$Date.Checked), origin=as.Date('2017-12-31'))
 # apply(ttTab, 1, function(x) dimnames(ttTab)[[2]][x!=0])
 ```
 
-```{r getReady, echo=FALSE}
+```{r getReady}
 # Set the cut-off dates for the monthly intervals
 lastDate <- sort(tl$Date.Checked, decreasing=TRUE)[1]
 yr <- as.integer(substring(lastDate, 1, 4))
@@ -59,7 +60,7 @@ The summary is for the most recent monthly interval (`r paste(month.name[(mth-1)
 
 ## The most recent monthly interval
 
-```{r currMth, echo=FALSE}
+```{r currMth}
 # Subset tl to the data for the current month only
 currMth <- tl[obsMth==levels(obsMth)[mth-1],]
 
@@ -81,7 +82,8 @@ catch <- cbind(catch, Total=apply(catch[, -1], 1, sum, na.rm=TRUE))
 
 # Next add in the number of traps per line (irrespective of whether some are missing)
 nTrap <- table(tl$Line, gsub('([[:upper:]]+)([[:digit:]]+)', '\\2', tl$Tag.No))
-catch <- merge(apply(nTrap, 1, function(x) length(x[x!=0])), catch, by='row.names', all=TRUE)
+nTrap <- apply(nTrap, 1, function(x) length(x[x!=0]))
+catch <- merge(nTrap, catch, by='row.names', all=TRUE)
 colnames(catch)[2:3] <- c('nTrap','Sprung')
 
 rownames(catch) <- catch$Row.names
@@ -93,25 +95,33 @@ rownames(catch)[nrow(catch)] <- 'TOTAL'
 catch <- cbind(catch, round(apply(catch[,-1], 2, function(x) 100*x/catch[,1]), 1))
 ```
 
-The table (below) summarises the number of pests caught in the most recent monthly interval for each line.  The first column is the number of traps^[In some cases traps may be missing or not found at checking, but this is disregarded in this summary], followed by the number which were sprung but empty.  The remaining columns (in blue) give the numbers of rats, stoats, weasels, other mammals (e.g., cats, ferrets, rabbits) and the total mammals.  
+Table \ref{currMthN} (below) summarises the number of mammals caught in the most recent monthly interval for each line.  The first column is the number of traps^[In some cases traps may be missing or not found at checking, but this is disregarded in this summary], followed by the number which were sprung but empty.  The remaining columns (in blue) give the numbers of rats, stoats, weasels, other mammals (e.g., cats, ferrets, rabbits) and the total mammals.  
 
-```{r currMthN, echo=FALSE}
-kable(catch[, 1:(length(stdStat)+3)]) %>%
-  kable_styling(full_width=FALSE) %>%
-  column_spec(length(stdStat)+4, bold=TRUE) %>%
-  column_spec(3, border_left=TRUE) %>%
-  column_spec(4:8, color='blue') %>%
-  row_spec(nrow(catch), bold = T, background = "#e5e5e5")
+```{r currMthN}
+# kable(catch[, 1:(length(stdStat)+3)]) %>%
+#   kable_styling(full_width=FALSE) %>%
+kable(catch[, 1:(length(stdStat)+3)], 'latex', booktabs=TRUE,
+      caption='\\label{currMthN}Current month catch for each line.') %>%
+  kable_styling(latex_options="hold_position") %>%
+  column_spec(length(stdStat)+4, bold=TRUE, color='blue') %>%
+  column_spec(2, color='gray') %>%
+  column_spec(4:7, color='blue') %>%
+  row_spec(nrow(catch), bold=TRUE, background="#e5e5e5")
 ```
 
-The next table is similar, except that the numbers are expressed as percentages of the total number of traps on the line.
+\pagebreak
 
-```{r currMthPC, echo=FALSE}
-kable(catch[, c(1, ((length(stdStat)+4):ncol(catch)))]) %>%
-  kable_styling(full_width=FALSE) %>%
-  column_spec(length(stdStat)+4, bold=TRUE) %>%
-  column_spec(3, border_left=TRUE) %>%
-  column_spec(4:8, color='blue') %>%
+The next table (Table \ref{currMthPC}) is similar, except that the numbers are expressed as percentages of the total number of traps on the line.
+
+```{r currMthPC}
+# kable(catch[, c(1, ((length(stdStat)+4):ncol(catch)))]) %>%
+#   kable_styling(full_width=FALSE) %>%
+kable(catch[, c(1, ((length(stdStat)+4):ncol(catch)))], 'latex', booktabs=TRUE,
+      caption='\\label{currMthPC}Current month catch per trap ($\\times$ 100) for each line.') %>%
+  kable_styling(latex_options="hold_position") %>%
+  column_spec(length(stdStat)+4, bold=TRUE, color='blue') %>%
+  column_spec(2, color='gray') %>%
+  column_spec(4:7, color='blue') %>%
   row_spec(nrow(catch), bold = T, background = "#e5e5e5")
 ```
 
@@ -119,7 +129,7 @@ kable(catch[, c(1, ((length(stdStat)+4):ncol(catch)))]) %>%
 
 ### Mammals caught by line
 
-```{r yrToDate, echo=FALSE}
+```{r yrToDate}
 # First tabulate the number of pests caught
 trap1 <- table(tl$Line, tl$Trap.1)
 trap2 <- table(tl$Line, tl$Trap.2)
@@ -137,8 +147,7 @@ catch <- cbind(catch[, 1:length(stdStat)],
 catch <- cbind(catch, Total=apply(catch[, -1], 1, sum, na.rm=TRUE))
 
 # Next add in the number of traps per line (irrespective of whether some are missing)
-nTrap <- table(tl$Line, gsub('([[:upper:]]+)([[:digit:]]+)', '\\2', tl$Tag.No))
-catch <- merge(apply(nTrap, 1, function(x) length(x[x!=0])), catch, by='row.names', all=TRUE)
+catch <- merge(nTrap, catch, by='row.names', all=TRUE) # nTrap previously calculated
 colnames(catch)[2:3] <- c('nTrap','Sprung')
 
 rownames(catch) <- catch$Row.names
@@ -150,28 +159,155 @@ rownames(catch)[nrow(catch)] <- 'TOTAL'
 catch <- cbind(catch, round(apply(catch[,-1], 2, function(x) 100*x/(catch[,1]*(mth-1))), 1))
 ```
 
-The first table (below) summarises the number of pests caught in the year to date for each line.  The first column is the number of traps, followed by the number which were sprung but empty.  The remaining columns (in blue) give the numbers of rats, stoats, weasels, other mammals (e.g., cats, ferrets, rabbits) and the total mammals.  
+Table \ref{yrToDateN} (below) summarises the number of mammals caught in the year to date for each line.  The first column is the number of traps, followed by the number which were sprung but empty.  The remaining columns (in blue) give the numbers of rats, stoats, weasels, other mammals (e.g., cats, ferrets, rabbits) and the total mammals.  
 
 ```{r yrToDateN, echo=FALSE}
-kable(catch[, 1:(length(stdStat)+3)]) %>%
-  kable_styling(full_width=FALSE) %>%
-  column_spec(length(stdStat)+4, bold=TRUE) %>%
-  column_spec(3, border_left=TRUE) %>%
-  column_spec(4:8, color='blue') %>%
+# kable(catch[, 1:(length(stdStat)+3)]) %>%
+#   kable_styling(full_width=FALSE) %>%
+kable(catch[, 1:(length(stdStat)+3)], 'latex', booktabs=TRUE,
+      caption='\\label{yrToDateN}Total year-to-date catch for each line.') %>%
+  kable_styling(latex_options="hold_position") %>%
+  column_spec(length(stdStat)+4, bold=TRUE, color='blue') %>%
+  column_spec(2, color='gray') %>%
+  column_spec(4:7, color='blue') %>%
   row_spec(nrow(catch), bold = T, background = "#e5e5e5")
 ```
 
-Next, the data are presented as numbers caught per trap per month (x 100) for each line.  This is analogous to the second table in the current month section which gave the percentages.
+\pagebreak
 
-```{r yrToDatePC, echo=FALSE}
-kable(catch[, c(1, ((length(stdStat)+4):ncol(catch)))]) %>%
-  kable_styling(full_width=FALSE) %>%
-  column_spec(length(stdStat)+4, bold=TRUE) %>%
-  column_spec(3, border_left=TRUE) %>%
-  column_spec(4:8, color='blue') %>%
+Next, the data are presented as numbers caught per trap per month ($\times$ 100) for each line (Table \ref{yrToDatePC}).  This is analogous to the second table in the current month section which gave the percentages.
+
+```{r yrToDatePC}
+# kable(catch[, c(1, ((length(stdStat)+4):ncol(catch)))]) %>%
+  # kable_styling(full_width=FALSE) %>%
+kable(catch[, c(1, ((length(stdStat)+4):ncol(catch)))], 'latex', booktabs=TRUE,
+      caption='\\label{yrToDatePC}Year-to-date catch per trap per month ($\\times$ 100) for each line.') %>%
+  kable_styling(latex_options="hold_position") %>%
+  column_spec(length(stdStat)+4, bold=TRUE, color='blue') %>%
+  column_spec(2, color='gray') %>%
+  column_spec(4:7, color='blue') %>%
   row_spec(nrow(catch), bold = T, background = "#e5e5e5")
 ```
+
+\pagebreak
 
 ### Mammals caught by month
 
+```{r mthCatchP}
+# First tabulate the number of pests caught
+trap1 <- table(obsMth, tl$Trap.1)
+trap2 <- table(obsMth, tl$Trap.2)
+trap2 <- trap2[, colnames(trap2)!='N/A']
+tt <- unique(c(colnames(trap1), colnames(trap2)))
+
+trap1 <- cbind(trap1, matrix(0, nrow(trap1), sum(!(tt %in% colnames(trap1))),
+                             dimnames=list(dimnames(trap1)[[1]], tt[!(tt %in% colnames(trap1))])))
+trap2 <- cbind(trap2, matrix(0, nrow(trap2), sum(!(tt %in% colnames(trap2))),
+                             dimnames=list(dimnames(trap2)[[1]], tt[!(tt %in% colnames(trap2))])))
+catch <- trap1[, tt] + trap2[, tt]
+catch <- catch[, match(c(stdStat, 'Cat','Ferret','Mouse','Rabbit'), colnames(catch))]
+catch <- cbind(catch[, 1:length(stdStat)],
+               Other=apply(catch[, -(1:length(stdStat))], 1, sum, na.rm=TRUE))
+catch <- cbind(catch, Total=apply(catch[, -1], 1, sum, na.rm=TRUE))
+
+# Next add in the number of traps per line (irrespective of whether some are missing)
+colnames(catch)[1] <- 'Sprung'
+
+# Add numbers caught per trap per month (x 100)
+catch <- cbind(catch, round(apply(catch[,-1], 2, function(x) 100*x/(catch[,1]*(mth-1))), 1))
+```
+Figure \ref{mthCatchPFig} shows the catch per month summed over all lines for all mammals (total), rats, mustelids (stoats and weasels) and other mammals (including ferrets).
+
+```{r, mthCatchPFig, fig.height=4, fig.cap="\\label{mthCatchPFig}Trap catches summed over all traps for each monthly interval. Note: 'mustelid' includes only stoats and weasels (ferrets are included in 'other')."}
+par(mar=c(3,3,0.5,2), las=1, mgp=c(2.2, 0.8, 0))
+tt <- catch[catch[,'Total']!=0,]
+plot(1:nrow(tt), tt[,'Total'], xlab='Month interval', ylab='Numbers caught',
+     ylim=c(0, max(tt[,'Total'])), xaxt='n', type='l', bty='n')
+axis(1, 1:nrow(tt), row.names(tt))
+axis(2, c(0, max(tt[,'Total'])), c('',''), tick=0)            
+lines(1:nrow(tt), tt[,'Rat'], col='gray40')
+lines(1:nrow(tt), tt[,'Stoat']+tt[,'Weasel'], col='brown')
+# lines(1:nrow(tt), tt[,'Weasel'], col='wheat')
+lines(1:nrow(tt), tt[,'Other'], col='orange')
+text(rep(nrow(tt)+0.1, 4), c(tt[nrow(tt),c('Total','Rat')]+c(2,-2),
+                             tt[nrow(tt),'Stoat']+tt[nrow(tt),'Weasel']+2, tt[nrow(tt),'Other']-2),
+     c('Total','Rat','Mustelid','Other'), adj=0, xpd=TRUE, cex=0.8,
+     col=c('black','gray40','brown','orange'))
+```
+
+\pagebreak
+
 ### Catch by month for each line
+
+```{r mthCatchL}
+# First tabulate the number of pests caught
+trap1 <- table(obsMth, tl$Line, tl$Trap.1)
+# trap1 <- apply(trap1[,, c('Rat','Stoat','Weasel','Cat','Ferret','Mouse','Rabbit')], 1:2, sum)
+trap2 <- table(obsMth, tl$Line, tl$Trap.2)
+# trap2 <- apply(trap2[,, c('Rat','Stoat','Weasel','Cat','Ferret','Mouse','Rabbit')], 1:2, sum)
+trap2 <- trap2[, , dimnames(trap2)[[3]]!='N/A']
+tt <- unique(c(dimnames(trap1)[[3]], dimnames(trap2)[[3]]))
+# Append to trap1 if necessary
+appd <- array(0, replace(dim(trap1), 3, length(tt)-dim(trap1)[3]),
+              dimnames=list(dimnames(trap1)[[1]], dimnames(trap1)[[2]],
+                            tt[!(tt %in% dimnames(trap1)[[3]])]))
+trap1 <- abind::abind(trap1, appd, along=3)
+# Append to trap2
+appd <- array(0, replace(dim(trap2), 3, length(tt)-dim(trap2)[3]),
+              dimnames=list(dimnames(trap2)[[1]], dimnames(trap2)[[2]],
+                            tt[!(tt %in% dimnames(trap2)[[3]])]))
+trap2 <- abind::abind(trap2, appd, along=3)
+# Only interested in mammalian catch
+trap1 <- apply(trap1[,, c('Rat','Stoat','Weasel','Cat','Ferret','Mouse','Rabbit')], 1:2, sum)
+trap2 <- apply(trap2[,, c('Rat','Stoat','Weasel','Cat','Ferret','Mouse','Rabbit')], 1:2, sum)
+
+catch <- trap1 + trap2
+catch <- catch[apply(catch, 1, function(x) length(x[x!=0]))!=0,] # remove unchecked months
+catch <- 100*catch/matrix(nTrap, nrow(catch), ncol(catch), byrow=TRUE) # per trap
+```
+
+Figure \ref{mthCatchLFig} shows the monthly catch per trap ($\times$ 100) of all mammals for half of the lines on the top and for the other half on the bottom.  The colours half been chosen to roughly match those on the map supplied by DoC, and the line names have been abbreviated.
+
+```{r, mthCatchLFig, fig.height=6.3, fig.cap="\\label{mthCatchLFig}Monthly trap catch per trap ($\\times$ 100) of all mammals for each line. Note: the vertical scale on the two figures may differ."}
+par(mar=c(3,3,0,2.5), las=1, mgp=c(2.2, 0.8, 0), mfrow=c(2,1))
+tt <- catch[, colnames(catch) %in% c('Lewis Pass H/Way','Lockingtons','Marble Hill',
+                                     'Maruia River','Kellys','Campground')]
+lCol <- c('gold','darkgreen','grey40','turquoise','lightgreen','pink3')
+plot(1:nrow(tt), tt[,1], xlab='Month interval', ylab='Numbers caught',
+     ylim=c(0, max(tt)), xaxt='n', type='l', bty='n')
+axis(1, 1:nrow(tt), row.names(tt))
+axis(2, c(0, max(tt)), c('',''), tick=0)
+
+for(i in 1:ncol(tt))
+{
+  lines(1:nrow(tt), tt[,i], col=lCol[i])
+  text(nrow(tt)+0.1, tt[nrow(tt), i], abbreviate(colnames(tt), 6)[i],
+       adj=0, xpd=TRUE, cex=0.8, col=lCol[i])
+}
+
+tt <- catch[, !(colnames(catch) %in% c('Lewis Pass H/Way','Lockingtons','Marble Hill',
+                                       'Maruia River','Kellys','Campground'))]
+lCol <- c('darkred','pink3','grey40','blue','red','green')
+plot(1:nrow(tt), tt[,1], xlab='Month interval', ylab='Numbers caught',
+     ylim=c(0, max(tt)), xaxt='n', type='l', bty='n')
+axis(1, 1:nrow(tt), row.names(tt))
+axis(2, c(0, max(tt)), c('',''), tick=0)
+
+for(i in 1:ncol(tt))
+{
+  lines(1:nrow(tt), tt[,i], col=lCol[i])
+  text(nrow(tt)+0.1, tt[nrow(tt), i], abbreviate(colnames(tt), 6)[i],
+       adj=0, xpd=TRUE, cex=0.8, col=lCol[i])
+}
+```
+
+### Non-target species
+
+```{r, nonTarget}
+nonTar <- table(unlist(tl[, c('Trap.1','Trap.2')]))
+```
+
+Finally, in the year to date, the following non-target species have been caught: 
+`r if ('Robin' %in% names(nonTar)) nonTar[names(nonTar)=='Robin'] else 0` robin,
+`r if ('Weka' %in% names(nonTar)) nonTar[names(nonTar)=='Weka'] else 0` weka, and 
+`r if ('Harrier' %in% names(nonTar)) nonTar[names(nonTar)=='Harrier'] else 0` harrier.
