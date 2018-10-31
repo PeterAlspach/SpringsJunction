@@ -13,8 +13,12 @@ output:
     # code_folding: hide
 ---
 
+<!-- To do: -->
+<!-- Need to omit lines that weren't checked in a particular month from the graph -->
+<!-- Classify 'other' in the final section and state how many were caught in the current month -->
+
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo=FALSE, cache=TRUE, error=TRUE)
+knitr::opts_chunk$set(echo=FALSE, cache=FALSE, error=TRUE)
 library(knitr)
 library(kableExtra)
 ```
