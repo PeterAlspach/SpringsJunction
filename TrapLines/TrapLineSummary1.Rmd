@@ -305,13 +305,34 @@ for(i in 1:ncol(tt))
 }
 ```
 
-### Non-target species
+## Miscellaneous species
 
 ```{r, nonTarget}
-nonTar <- table(unlist(tl[, c('Trap.1','Trap.2')]))
+mSppFn <- function(sppTab, spp, sppPlural, zero=TRUE) {
+  if (spp %in% names(sppTab)) {
+    if (sppTab[names(sppTab)==spp]==1) paste(1, tolower(spp)) else {
+      paste(sppTab[names(sppTab)==spp], sppPlural)
+    }
+    if (zero) paste(0, spp)
+  }
+}
+
+miscSppY <- table(unlist(tl[, c('Trap.1','Trap.2')]))
+miscSppM <- table(unlist(currMth[, c('Trap.1','Trap.2')]))
 ```
 
+### Other mammals
+
+The other mammals (i.e., 'Other' in the tables and figures above) caught so far this year are:
+`r if ('Cat' %in% names(miscSppY)) miscSppY[names(miscSppY)=='Cat'] else 0` cats,
+`r if ('Ferret' %in% names(miscSppY)) miscSppY[names(miscSppY)=='Ferret'] else 0` ferrets,
+`r if ('Hedgehog' %in% names(miscSppY)) miscSppY[names(miscSppY)=='Hedgehog'] else 0` hedgehogs,
+`r if ('Mouse' %in% names(miscSppY)) miscSppY[names(miscSppY)=='Mouse'] else 0` mice, and
+`r if ('Rabbit' %in% names(miscSppY)) miscSppY[names(miscSppY)=='Rabbit'] else 0` rabbits
+
+### Non-target species
+
 Finally, in the year to date, the following non-target species have been caught: 
-`r if ('Robin' %in% names(nonTar)) nonTar[names(nonTar)=='Robin'] else 0` robin,
-`r if ('Weka' %in% names(nonTar)) nonTar[names(nonTar)=='Weka'] else 0` weka, and 
-`r if ('Harrier' %in% names(nonTar)) nonTar[names(nonTar)=='Harrier'] else 0` harrier.
+`r if ('Robin' %in% names(miscSppY)) miscSppY[names(miscSppY)=='Robin'] else 0` robin,
+`r if ('Weka' %in% names(miscSppY)) miscSppY[names(miscSppY)=='Weka'] else 0` weka, and 
+`r if ('Harrier' %in% names(miscSppY)) miscSppY[names(miscSppY)=='Harrier'] else 0` harrier.
