@@ -14,8 +14,7 @@ output:
 ---
 
 <!-- To do: -->
-<!-- Need to omit lines that weren't checked in a particular month from the graph -->
-<!-- Classify 'other' in the final section and state how many were caught in the current month -->
+<!-- Mammals are defined at the end of the 'getReady' chunk (about line 58) -->
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo=FALSE, cache=FALSE, error=TRUE)
@@ -56,6 +55,7 @@ obsMth <- cut(tl$jDay, c(cutDays, 365+15+floor((4.001-yr%%4)/4)),
 
 # Set the standard trap status of interest
 stdStat <- c('Sprung and Empty','Rat','Stoat','Weasel') # standard trap status
+allMammals <- c('Rat','Stoat','Weasel','Cat','Ferret','Mouse','Rabbit','Hedgehog','Hare','Possum')
 ```
 
 The following tables give a summary of the catches from the `r length(unique(tl$Tag.No))` traps on the `r length(unique(tl$Line))` trap-lines at Maruia.  The intention is to check the traps monthly around the change of the month, hence monthly summaries are aggregated from the 16^th^ of one month to the 15^th^ of the next (and labelled with the first letter of the two months)^[There were no records for the first half of January 2018.].
@@ -79,7 +79,8 @@ trap1 <- cbind(trap1, matrix(0, nrow(trap1), sum(!(tt %in% colnames(trap1))),
 trap2 <- cbind(trap2, matrix(0, nrow(trap2), sum(!(tt %in% colnames(trap2))),
                              dimnames=list(dimnames(trap2)[[1]], tt[!(tt %in% colnames(trap2))])))
 catch <- trap1[, tt] + trap2[, tt]
-catch <- catch[, match(c(stdStat, 'Cat','Ferret','Mouse','Rabbit'), colnames(catch))]
+# catch <- catch[, match(c(stdStat, 'Cat','Ferret','Mouse','Rabbit'), colnames(catch))]
+catch <- catch[, match(unique(c(stdStat, allMammals)), colnames(catch))]
 catch <- cbind(catch[, 1:length(stdStat)],
                Other=apply(catch[, -(1:length(stdStat))], 1, sum, na.rm=TRUE))
 catch <- cbind(catch, Total=apply(catch[, -1], 1, sum, na.rm=TRUE))
@@ -145,7 +146,7 @@ trap1 <- cbind(trap1, matrix(0, nrow(trap1), sum(!(tt %in% colnames(trap1))),
 trap2 <- cbind(trap2, matrix(0, nrow(trap2), sum(!(tt %in% colnames(trap2))),
                              dimnames=list(dimnames(trap2)[[1]], tt[!(tt %in% colnames(trap2))])))
 catch <- trap1[, tt] + trap2[, tt]
-catch <- catch[, match(c(stdStat, 'Cat','Ferret','Mouse','Rabbit'), colnames(catch))]
+catch <- catch[, match(unique(c(stdStat, allMammals)), colnames(catch))]
 catch <- cbind(catch[, 1:length(stdStat)],
                Other=apply(catch[, -(1:length(stdStat))], 1, sum, na.rm=TRUE))
 catch <- cbind(catch, Total=apply(catch[, -1], 1, sum, na.rm=TRUE))
@@ -209,7 +210,7 @@ trap1 <- cbind(trap1, matrix(0, nrow(trap1), sum(!(tt %in% colnames(trap1))),
 trap2 <- cbind(trap2, matrix(0, nrow(trap2), sum(!(tt %in% colnames(trap2))),
                              dimnames=list(dimnames(trap2)[[1]], tt[!(tt %in% colnames(trap2))])))
 catch <- trap1[, tt] + trap2[, tt]
-catch <- catch[, match(c(stdStat, 'Cat','Ferret','Mouse','Rabbit'), colnames(catch))]
+catch <- catch[, match(unique(c(stdStat, allMammals)), colnames(catch))]
 catch <- cbind(catch[, 1:length(stdStat)],
                Other=apply(catch[, -(1:length(stdStat))], 1, sum, na.rm=TRUE))
 catch <- cbind(catch, Total=apply(catch[, -1], 1, sum, na.rm=TRUE))
@@ -262,29 +263,32 @@ appd <- array(0, replace(dim(trap2), 3, length(tt)-dim(trap2)[3]),
                             tt[!(tt %in% dimnames(trap2)[[3]])]))
 trap2 <- abind::abind(trap2, appd, along=3)
 # Only interested in mammalian catch
-trap1 <- apply(trap1[,, c('Rat','Stoat','Weasel','Cat','Ferret','Mouse','Rabbit')], 1:2, sum)
-trap2 <- apply(trap2[,, c('Rat','Stoat','Weasel','Cat','Ferret','Mouse','Rabbit')], 1:2, sum)
+mammals <- allMammals[allMammals %in% dimnames(trap1)[[3]]]
+trap1 <- apply(trap1[,, mammals], 1:2, sum)
+trap2 <- apply(trap2[,, mammals], 1:2, sum)
 
 catch <- trap1 + trap2
-catch <- catch[apply(catch, 1, function(x) length(x[x!=0]))!=0,] # remove unchecked months
+catch[table(obsMth, tl$Line)==0] <- NA # put missing value in where line not checked
+catch <- catch[apply(catch, 1, function(x) length(x[!is.na(x)]))!=0,] # remove unchecked months
 catch <- 100*catch/matrix(nTrap, nrow(catch), ncol(catch), byrow=TRUE) # per trap
 ```
 
 Figure \ref{mthCatchLFig} shows the monthly catch per trap ($\times$ 100) of all mammals for half of the lines on the top and for the other half on the bottom.  The colours half been chosen to roughly match those on the map supplied by DoC, and the line names have been abbreviated.
 
-```{r, mthCatchLFig, fig.height=6.3, fig.cap="\\label{mthCatchLFig}Monthly trap catch per trap ($\\times$ 100) of all mammals for each line. Note: the vertical scale on the two figures may differ."}
+```{r, mthCatchLFig, fig.height=6.3, fig.cap="\\label{mthCatchLFig}Monthly trap catch per trap ($\\times$ 100) of all mammals for each line. Some lines were not checked in some monthly periods, which is indicated by the disconnected lines. Note: the vertical scale on the two figures may differ."}
 par(mar=c(3,3,0,2.5), las=1, mgp=c(2.2, 0.8, 0), mfrow=c(2,1))
 tt <- catch[, colnames(catch) %in% c('Lewis Pass H/Way','Lockingtons','Marble Hill',
                                      'Maruia River','Kellys','Campground')]
 lCol <- c('gold','darkgreen','grey40','turquoise','lightgreen','pink3')
-plot(1:nrow(tt), tt[,1], xlab='Month interval', ylab='Numbers caught',
-     ylim=c(0, max(tt)), xaxt='n', type='l', bty='n')
+plot(1:nrow(tt), tt[,1], xlab='Month interval', ylab='Catch per trap (x100)',
+     ylim=c(0, max(tt, na.rm=TRUE)), xaxt='n', type='l', bty='n')
 axis(1, 1:nrow(tt), row.names(tt))
-axis(2, c(0, max(tt)), c('',''), tick=0)
+axis(2, c(0, max(tt, na.rm=TRUE)), c('',''), tick=0)
 
 for(i in 1:ncol(tt))
 {
   lines(1:nrow(tt), tt[,i], col=lCol[i])
+  points(1:nrow(tt), tt[,i], col=lCol[i], pch=16, cex=0.5)
   text(nrow(tt)+0.1, tt[nrow(tt), i], abbreviate(colnames(tt), 6)[i],
        adj=0, xpd=TRUE, cex=0.8, col=lCol[i])
 }
@@ -292,14 +296,15 @@ for(i in 1:ncol(tt))
 tt <- catch[, !(colnames(catch) %in% c('Lewis Pass H/Way','Lockingtons','Marble Hill',
                                        'Maruia River','Kellys','Campground'))]
 lCol <- c('darkred','pink3','grey40','blue','red','green')
-plot(1:nrow(tt), tt[,1], xlab='Month interval', ylab='Numbers caught',
-     ylim=c(0, max(tt)), xaxt='n', type='l', bty='n')
+plot(1:nrow(tt), tt[,1], xlab='Month interval', ylab='Catch per trap (x100)',
+     ylim=c(0, max(tt, na.rm=TRUE)), xaxt='n', type='l', bty='n')
 axis(1, 1:nrow(tt), row.names(tt))
-axis(2, c(0, max(tt)), c('',''), tick=0)
+axis(2, c(0, max(tt, na.rm=TRUE)), c('',''), tick=0)
 
 for(i in 1:ncol(tt))
 {
   lines(1:nrow(tt), tt[,i], col=lCol[i])
+  points(1:nrow(tt), tt[,i], col=lCol[i], pch=16, cex=0.5)
   text(nrow(tt)+0.1, tt[nrow(tt), i], abbreviate(colnames(tt), 6)[i],
        adj=0, xpd=TRUE, cex=0.8, col=lCol[i])
 }
@@ -307,13 +312,16 @@ for(i in 1:ncol(tt))
 
 ## Miscellaneous species
 
-```{r, nonTarget}
-mSppFn <- function(sppTab, spp, sppPlural, zero=TRUE) {
-  if (spp %in% names(sppTab)) {
-    if (sppTab[names(sppTab)==spp]==1) paste(1, tolower(spp)) else {
-      paste(sppTab[names(sppTab)==spp], sppPlural)
-    }
-    if (zero) paste(0, spp)
+```{r, miscSpp}
+mSppFn <- function(sppTab, spp, sppPlural, zero=TRUE)
+{
+  if (spp %in% names(sppTab))
+  {
+    if (sppTab[names(sppTab)==spp]==1) paste(1, tolower(spp)) else
+        paste(sppTab[names(sppTab)==spp], sppPlural)
+  } else
+  {
+    if (zero) paste(0, sppPlural) else NULL
   }
 }
 
@@ -324,15 +332,35 @@ miscSppM <- table(unlist(currMth[, c('Trap.1','Trap.2')]))
 ### Other mammals
 
 The other mammals (i.e., 'Other' in the tables and figures above) caught so far this year are:
-`r if ('Cat' %in% names(miscSppY)) miscSppY[names(miscSppY)=='Cat'] else 0` cats,
-`r if ('Ferret' %in% names(miscSppY)) miscSppY[names(miscSppY)=='Ferret'] else 0` ferrets,
-`r if ('Hedgehog' %in% names(miscSppY)) miscSppY[names(miscSppY)=='Hedgehog'] else 0` hedgehogs,
-`r if ('Mouse' %in% names(miscSppY)) miscSppY[names(miscSppY)=='Mouse'] else 0` mice, and
-`r if ('Rabbit' %in% names(miscSppY)) miscSppY[names(miscSppY)=='Rabbit'] else 0` rabbits
+`r mSppFn(miscSppY, 'Cat', 'cats')`,
+`r mSppFn(miscSppY, 'Ferret', 'ferrets')`,
+`r mSppFn(miscSppY, 'Hedgehog', 'hedgehogs')`,
+`r mSppFn(miscSppY, 'Mouse', 'mice')`, and
+`r mSppFn(miscSppY, 'Rabbit', 'rabbits')`.
+Of these, `r if ('Cat' %in% names (miscSppM)) paste0(mSppFn(miscSppM, 'Cat', 'cats', zero=FALSE), ',')` `r if ('Ferret' %in% names (miscSppM)) paste0(mSppFn(miscSppM, 'Ferret', 'ferrets', zero=FALSE), ',')` `r if ('Hedgehog' %in% names (miscSppM)) paste0(mSppFn(miscSppM, 'Hedgehog', 'hedgehogs', zero=FALSE), ',')` `r if ('Mouse' %in% names (miscSppM)) paste0(mSppFn(miscSppM, 'Mouse', 'mice', zero=FALSE), ',')` `r if ('Rabbit' %in% names (miscSppM)) paste0(mSppFn(miscSppM, 'Rabbit', 'rabbits', zero=FALSE), ',')` was/were caught in the current monthly period.
 
 ### Non-target species
 
 Finally, in the year to date, the following non-target species have been caught: 
-`r if ('Robin' %in% names(miscSppY)) miscSppY[names(miscSppY)=='Robin'] else 0` robin,
-`r if ('Weka' %in% names(miscSppY)) miscSppY[names(miscSppY)=='Weka'] else 0` weka, and 
-`r if ('Harrier' %in% names(miscSppY)) miscSppY[names(miscSppY)=='Harrier'] else 0` harrier.
+`r mSppFn(miscSppY, 'Harrier', 'harrier')`,
+`r mSppFn(miscSppY, 'Robin', 'robins')`, and
+`r mSppFn(miscSppY, 'Weka', 'weka')`.
+
+\color{black!50}
+
+### Check
+
+Here are the contents of \texttt{miscSppY} and \texttt{miscSppM} as a check that nothing has been missed from the two previous sub-sections:
+
+```{r miscSppChk}
+chkTab <- merge(cbind(Spp=names(miscSppY), ToDate=miscSppY),
+                cbind(Spp=names(miscSppM), Month=miscSppM), all=TRUE)
+excl <- c('N/A','Other see comment','Rat','Sprung and Empty','Still Set',
+          'Still Set Bait Eaten','Stoat','Weasel')
+chkTab <- chkTab[!(chkTab[,'Spp'] %in% excl),]
+row.names(chkTab) <- NULL
+kable(chkTab, 'latex', booktabs=TRUE) %>%
+  kable_styling(latex_options="hold_position") %>%
+  column_spec(1:3, color='gray')
+
+```
