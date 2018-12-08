@@ -71,13 +71,15 @@ currMth <- tl[obsMth==levels(obsMth)[mth-1],]
 # First tabulate the number of pests caught
 trap1 <- table(currMth$Line, currMth$Trap.1)
 trap2 <- table(currMth$Line, currMth$Trap.2)
-trap2 <- trap2[, colnames(trap2)!='N/A']
+# trap2 <- trap2[, colnames(trap2)!='N/A']
 tt <- unique(c(colnames(trap1), colnames(trap2)))
+tt <- tt[tt!='N/A']
 
 trap1 <- cbind(trap1, matrix(0, nrow(trap1), sum(!(tt %in% colnames(trap1))),
                              dimnames=list(dimnames(trap1)[[1]], tt[!(tt %in% colnames(trap1))])))
 trap2 <- cbind(trap2, matrix(0, nrow(trap2), sum(!(tt %in% colnames(trap2))),
                              dimnames=list(dimnames(trap2)[[1]], tt[!(tt %in% colnames(trap2))])))
+trap2 <- trap2[, colnames(trap2)!='N/A']
 catch <- trap1[, tt] + trap2[, tt]
 # catch <- catch[, match(c(stdStat, 'Cat','Ferret','Mouse','Rabbit'), colnames(catch))]
 catch <- catch[, match(unique(c(stdStat, allMammals)), colnames(catch))]
@@ -343,9 +345,15 @@ Of these, `r if ('Cat' %in% names (miscSppM)) paste0(mSppFn(miscSppM, 'Cat', 'ca
 
 Finally, in the year to date, the following non-target species have been caught: 
 `r mSppFn(miscSppY, 'Harrier', 'harrier')`,
-`r mSppFn(miscSppY, 'Robin', 'robins')`, and
-`r mSppFn(miscSppY, 'Weka', 'weka')`.
+`r mSppFn(miscSppY, 'Robin', 'robins')`, 
+`r mSppFn(miscSppY, 'Weka', 'weka')`. and
+`r mSppFn(miscSppY, 'Weka Juvenile', 'weka juveniles')`.
 
+```{r OtherSeeComment}
+osc <- tl[tl$Trap.1=='Other see comment' | tl$Trap.2=='Other see comment',]
+osc <- osc[osc$Record.Comment!='' & osc$Status=='Open',]
+```
+Other non-target species caught in the year to date are `r osc$Record.Comment`.
 \color{black!50}
 
 ### Check
@@ -362,5 +370,4 @@ row.names(chkTab) <- NULL
 kable(chkTab, 'latex', booktabs=TRUE) %>%
   kable_styling(latex_options="hold_position") %>%
   column_spec(1:3, color='gray')
-
 ```
