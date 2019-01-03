@@ -66,6 +66,7 @@ The summary is for the most recent monthly interval (`r paste(month.name[(mth-1)
 
 ```{r currMth}
 # Subset tl to the data for the current month only
+if (mth==1) mth <- 13
 currMth <- tl[obsMth==levels(obsMth)[mth-1],]
 
 # First tabulate the number of pests caught
@@ -100,6 +101,8 @@ rownames(catch)[nrow(catch)] <- 'TOTAL'
 
 # Add proportions based on total number of traps per line (including missing traps)
 catch <- cbind(catch, round(apply(catch[,-1], 2, function(x) 100*x/catch[,1]), 1))
+catch[nrow(catch), ncol(catch)] <- round(100*catch[nrow(catch), 'Total']/
+  sum(catch[-nrow(catch), 'nTrap'][!is.na(catch[,'Total'])], na.rm=TRUE), 1)
 ```
 
 Table \ref{currMthN} (below) summarises the number of mammals caught in the most recent monthly interval for each line.  The first column is the number of traps^[In some cases traps may be missing or not found at checking, but this is disregarded in this summary], followed by the number which were sprung but empty.  The remaining columns (in blue) give the numbers of rats, stoats, weasels, other mammals (e.g., cats, ferrets, rabbits) and the total mammals.  
