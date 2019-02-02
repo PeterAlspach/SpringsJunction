@@ -1,0 +1,42 @@
+## readData
+# Set the working directory and read the data
+setwd('~/GitHub/SpringsJunction/TrapLines')
+tl <- read.csv('TrapCatches.csv', header=TRUE, sep=',', stringsAsFactors=FALSE)
+
+# Rename traps with only a single digit 'd' to '0d'
+relNo <- tl[grep('[[:upper:]][[:digit:]]{1}$', tl$Tag.No), 'Tag.No']
+relNo <- paste0(substring(relNo, 1, nchar(relNo)-1), '0', substring(relNo, nchar(relNo)))
+tl[grep('[[:upper:]][[:digit:]]{1}$', tl$Tag.No), 'Tag.No'] <- relNo
+
+# Remove time from date stamp
+tl$Date.Checked <- substring(tl$Date.Checked, 1, 10)
+tl$jDay <- julian.Date(as.Date(tl$Date.Checked), origin=as.Date('2017-12-31'))
+
+# # Line name and code
+# ttTab <- table(tl$Line, gsub('([[:upper:]]+)([[:digit:]]+)', '\\1', tl$Tag.No))
+# apply(ttTab, 1, function(x) dimnames(ttTab)[[2]][x!=0])
+
+## getReady
+# Set the cut-off dates for the monthly intervals
+lastDate <- sort(tl$Date.Checked, decreasing=TRUE)[1]
+yr <- as.integer(substring(lastDate, 1, 4))
+mth <- as.integer(substring(lastDate, 6, 7))
+cutDays <- paste(yr, c(paste0('0', 1:9), 10:12), '15', sep='-') # cut at the middle of the month 
+cutDays <- julian.Date(as.Date(cutDays), origin=as.Date(paste0(yr-1, '-12-31')))
+obsMth <- cut(tl$jDay, c(cutDays, 365+15+floor((4.001-yr%%4)/4)), 
+              labels=c('J-F', 'F-M', 'M-A','A-M', 'M-J', 'J-J',
+                       'J-A', 'A-S', 'S-O', 'O-N', 'N-D', 'D-J'))
+
+# Set the standard trap status of interest
+stdStat <- c('Sprung and Empty','Rat','Stoat','Weasel') # standard trap status
+allMammals <- c('Rat','Stoat','Weasel','Cat','Ferret','Mouse','Rabbit','Hedgehog','Hare','Possum')
+
+catchByTrap <- with(tl, table(Tag.No, Trap.1))
+head(catchByTrap)
+table(catchByTrap[,'Rat'])
+table(apply(catchByTrap[, stdStat], 1, sum))
+table(apply(catchByTrap[, allMammals[1:7]], 1, sum))
+table(tl$Line)
+head(tl[tl$Line=='Lake Daniell Track',])
+catchByTrap['LD25',]
+apply(catchByTrap, 2, table)
