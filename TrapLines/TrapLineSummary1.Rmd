@@ -35,7 +35,11 @@ tl[grep('[[:upper:]][[:digit:]]{1}$', tl$Tag.No), 'Tag.No'] <- relNo
 
 # Remove time from date stamp
 tl$Date.Checked <- substring(tl$Date.Checked, 1, 10)
-tl$jDay <- julian.Date(as.Date(tl$Date.Checked), origin=as.Date('2017-12-31'))
+# Currently need to manually change the origin year at the beginning of each year
+tl$jDay <- julian.Date(as.Date(tl$Date.Checked), origin=as.Date('2018-12-31'))
+tlOld <- tl[tl$jDay <= 15,]
+tl <- tl[tl$jDay > 15,]
+
 
 # # Line name and code
 # ttTab <- table(tl$Line, gsub('([[:upper:]]+)([[:digit:]]+)', '\\1', tl$Tag.No))
@@ -67,6 +71,10 @@ The summary is for the most recent monthly interval (`r paste(month.name[(mth-1)
 ```{r currMth}
 # Subset tl to the data for the current month only
 if (mth==1) mth <- 13
+# obsMthOld <- obsMth[as.integer(substring(tl$Date.Checked, 1, 4)) < yr]
+# obsMth <- obsMth[as.integer(substring(tl$Date.Checked, 1, 4)) == yr]
+# tlOld <- tl[as.integer(substring(tl$Date.Checked, 1, 4)) < yr,]
+# tl <- tl[as.integer(substring(tl$Date.Checked, 1, 4)) == yr,]
 currMth <- tl[obsMth==levels(obsMth)[mth-1],]
 
 # First tabulate the number of pests caught
