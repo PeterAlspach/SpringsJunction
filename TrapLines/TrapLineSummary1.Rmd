@@ -126,7 +126,7 @@ catch[nrow(catch), ncol(catch)] <- round(100*catch[nrow(catch), 'Total']/
   sum(catch[-nrow(catch), 'nTrap'][!is.na(catch[,'Total'])], na.rm=TRUE), 1)
 ```
 
-Table \ref{currMthN} (below) summarises the number of mammals caught in the most recent monthly interval for each line.  The first column is the number of trap boxess^[In some cases trap boxes may be missing or not found at checking, but this is disregarded in this summary], followed by the number of traps which were sprung but empty.  The remaining columns (in blue) give the catch of rats, stoats, weasels, other mammals (e.g., cats, ferrets, rabbits) and the total mammals.  
+Table \ref{currMthN} (below) summarises the number of mammals caught in the most recent monthly interval for each line.  The first column is the number of trap boxes^[In some cases trap boxes may be missing or not found at checking, but this is disregarded in this summary], followed by the number of traps which were sprung but empty.  The remaining columns (in blue) give the catch of rats, stoats, weasels, other mammals (e.g., cats, ferrets, rabbits) and the total mammals.  
 
 ```{r currMthN}
 # kable(catch[, 1:(length(stdStat)+3)]) %>%
