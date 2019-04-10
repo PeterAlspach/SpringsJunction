@@ -35,11 +35,10 @@ tl[grep('[[:upper:]][[:digit:]]{1}$', tl$Tag.No), 'Tag.No'] <- relNo
 
 # Remove time from date stamp
 tl$Date.Checked <- substring(tl$Date.Checked, 1, 10)
-# Currently need to manually change the origin year at the beginning of each year
-tl$jDay <- julian.Date(as.Date(tl$Date.Checked), origin=as.Date('2018-12-31'))
+yr <- as.integer(substring(tl[substring(tl$Date.Checked, 4)>='01-16', 'Date.Checked'][1], 1, 4))
+tl$jDay <- julian.Date(as.Date(tl$Date.Checked), origin=as.Date(paste0(yr-1, '-12-31')))
 tlOld <- tl[tl$jDay <= 15,]
 tl <- tl[tl$jDay > 15,]
-
 
 # # Line name and code
 # ttTab <- table(tl$Line, gsub('([[:upper:]]+)([[:digit:]]+)', '\\1', tl$Tag.No))
@@ -49,20 +48,34 @@ tl <- tl[tl$jDay > 15,]
 ```{r getReady}
 # Set the cut-off dates for the monthly intervals
 lastDate <- sort(tl$Date.Checked, decreasing=TRUE)[1]
-yr <- as.integer(substring(lastDate, 1, 4))
 mth <- as.integer(substring(lastDate, 6, 7))
 cutDays <- paste(yr, c(paste0('0', 1:9), 10:12), '15', sep='-') # cut at the middle of the month 
 cutDays <- julian.Date(as.Date(cutDays), origin=as.Date(paste0(yr-1, '-12-31')))
-obsMth <- cut(tl$jDay, c(cutDays, 365+15+floor((4.001-yr%%4)/4)), 
-              labels=c('J-F', 'F-M', 'M-A','A-M', 'M-J', 'J-J',
-                       'J-A', 'A-S', 'S-O', 'O-N', 'N-D', 'D-J'))
+mthInt <- c('J-F', 'F-M', 'M-A','A-M', 'M-J', 'J-J','J-A', 'A-S', 'S-O', 'O-N', 'N-D', 'D-J')
+obsMth <- cut(tl$jDay, c(cutDays, 365+15+floor((4.001-yr%%4)/4)), labels=mthInt)
 
 # Set the standard trap status of interest
 stdStat <- c('Sprung and Empty','Rat','Stoat','Weasel') # standard trap status
 allMammals <- c('Rat','Stoat','Weasel','Cat','Ferret','Mouse','Rabbit','Hedgehog','Hare','Possum')
 ```
 
-The following tables give a summary of the catches from the `r length(unique(tl$Tag.No))` traps on the `r length(unique(tl$Line))` trap-lines at Maruia.  The intention is to check the traps monthly around the change of the month, hence monthly summaries are aggregated from the 16^th^ of one month to the 15^th^ of the next (and labelled with the first letter of the two months)^[There were no records for the first half of January 2018.].
+```{r readDataPY}
+# Read the data for the previous year
+tlPY <- read.csv(paste0('TrapCatches', yr-1, '.csv'), header=TRUE, sep=',', stringsAsFactors=FALSE)
+
+# Rename traps with only a single digit 'd' to '0d'
+relNoPY <- tlPY[grep('[[:upper:]][[:digit:]]{1}$', tlPY$Tag.No), 'Tag.No']
+relNoPY <- paste0(substring(relNoPY, 1, nchar(relNoPY)-1), '0', substring(relNoPY, nchar(relNoPY)))
+tlPY[grep('[[:upper:]][[:digit:]]{1}$', tlPY$Tag.No), 'Tag.No'] <- relNoPY
+
+# Remove time from date stamp
+tlPY$Date.Checked <- substring(tlPY$Date.Checked, 1, 10)
+tlPY$jDay <- julian.Date(as.Date(tlPY$Date.Checked), origin=as.Date(paste0(yr-2, '-12-31')))
+
+obsMthPY <- cut(tlPY$jDay, c(cutDays, 365+15+floor((4.001-(yr-1)%%4)/4)), labels=mthInt)
+```
+
+The following tables give a summary of the catches from the `r length(unique(tl$Tag.No))` trap boxes^[On some lines (Maruia River, Kellys, and parts of Fergusons Flat) each box contains two traps.  Thus, on these lines it is possible to catch two mammals per trap box.] on the `r length(unique(tl$Line))` trap-lines at Maruia.  The intention is to check the traps monthly around the change of the month, hence monthly summaries are aggregated from the 16^th^ of one month to the 15^th^ of the next (and labelled with the first letter of the two months)
 
 The summary is for the most recent monthly interval (`r paste(month.name[(mth-1):mth], collapse='-')`) in `r yr` and also the entire year-to-date.
 
@@ -113,13 +126,13 @@ catch[nrow(catch), ncol(catch)] <- round(100*catch[nrow(catch), 'Total']/
   sum(catch[-nrow(catch), 'nTrap'][!is.na(catch[,'Total'])], na.rm=TRUE), 1)
 ```
 
-Table \ref{currMthN} (below) summarises the number of mammals caught in the most recent monthly interval for each line.  The first column is the number of traps^[In some cases traps may be missing or not found at checking, but this is disregarded in this summary], followed by the number which were sprung but empty.  The remaining columns (in blue) give the numbers of rats, stoats, weasels, other mammals (e.g., cats, ferrets, rabbits) and the total mammals.  
+Table \ref{currMthN} (below) summarises the number of mammals caught in the most recent monthly interval for each line.  The first column is the number of trap boxess^[In some cases trap boxes may be missing or not found at checking, but this is disregarded in this summary], followed by the number of traps which were sprung but empty.  The remaining columns (in blue) give the catch of rats, stoats, weasels, other mammals (e.g., cats, ferrets, rabbits) and the total mammals.  
 
 ```{r currMthN}
 # kable(catch[, 1:(length(stdStat)+3)]) %>%
 #   kable_styling(full_width=FALSE) %>%
 kable(catch[, 1:(length(stdStat)+3)], 'latex', booktabs=TRUE,
-      caption='\\label{currMthN}Current month catch for each line.') %>%
+      caption="\\label{currMthN}Current month's catch for each line.") %>%
   kable_styling(latex_options="hold_position") %>%
   column_spec(length(stdStat)+4, bold=TRUE, color='blue') %>%
   column_spec(2, color='gray') %>%
@@ -129,13 +142,13 @@ kable(catch[, 1:(length(stdStat)+3)], 'latex', booktabs=TRUE,
 
 \pagebreak
 
-The next table (Table \ref{currMthPC}) is similar, except that the numbers are expressed as percentages of the total number of traps on the line.
+The next table (Table \ref{currMthPC}) is similar, except that the numbers are expressed as percentages of the total number of trap boxess on the line.
 
 ```{r currMthPC}
 # kable(catch[, c(1, ((length(stdStat)+4):ncol(catch)))]) %>%
 #   kable_styling(full_width=FALSE) %>%
 kable(catch[, c(1, ((length(stdStat)+4):ncol(catch)))], 'latex', booktabs=TRUE,
-      caption='\\label{currMthPC}Current month catch per trap ($\\times$ 100) for each line.') %>%
+      caption="\\label{currMthPC}Current month's catch per trap box ($\\times$ 100) for each line.") %>%
   kable_styling(latex_options="hold_position") %>%
   column_spec(length(stdStat)+4, bold=TRUE, color='blue') %>%
   column_spec(2, color='gray') %>%
@@ -177,7 +190,7 @@ rownames(catch)[nrow(catch)] <- 'TOTAL'
 catch <- cbind(catch, round(apply(catch[,-1], 2, function(x) 100*x/(catch[,1]*(mth-1))), 1))
 ```
 
-Table \ref{yrToDateN} (below) summarises the number of mammals caught in the year to date for each line.  The first column is the number of traps, followed by the number which were sprung but empty.  The remaining columns (in blue) give the numbers of rats, stoats, weasels, other mammals (e.g., cats, ferrets, rabbits) and the total mammals.  
+Table \ref{yrToDateN} (below) summarises the number of mammals caught in the year to date for each line.  The first column is the number of trap boxes, followed by the number of traps which were sprung but empty.  The remaining columns (in blue) give the catch of rats, stoats, weasels, other mammals (e.g., cats, ferrets, rabbits) and the total mammals.  
 
 ```{r yrToDateN, echo=FALSE}
 # kable(catch[, 1:(length(stdStat)+3)]) %>%
@@ -193,13 +206,13 @@ kable(catch[, 1:(length(stdStat)+3)], 'latex', booktabs=TRUE,
 
 \pagebreak
 
-Next, the data are presented as numbers caught per trap per month ($\times$ 100) for each line (Table \ref{yrToDatePC}).  This is analogous to the second table in the current month section which gave the percentages.
+Next, the data are presented as numbers caught per trap box per month ($\times$ 100) for each line (Table \ref{yrToDatePC}).  This is analogous to the second table in the current month section which gave the percentages.
 
 ```{r yrToDatePC}
 # kable(catch[, c(1, ((length(stdStat)+4):ncol(catch)))]) %>%
   # kable_styling(full_width=FALSE) %>%
 kable(catch[, c(1, ((length(stdStat)+4):ncol(catch)))], 'latex', booktabs=TRUE,
-      caption='\\label{yrToDatePC}Year-to-date catch per trap per month ($\\times$ 100) for each line.') %>%
+      caption='\\label{yrToDatePC}Year-to-date catch per trap box per month ($\\times$ 100) for each line.') %>%
   kable_styling(latex_options="hold_position") %>%
   column_spec(length(stdStat)+4, bold=TRUE, color='blue') %>%
   column_spec(2, color='gray') %>%
@@ -233,20 +246,55 @@ colnames(catch)[1] <- 'Sprung'
 
 # Add numbers caught per trap per month (x 100)
 catch <- cbind(catch, round(apply(catch[,-1], 2, function(x) 100*x/(catch[,1]*(mth-1))), 1))
-```
-Figure \ref{mthCatchPFig} shows the catch per month summed over all lines for all mammals (total), rats, mustelids (stoats and weasels) and other mammals (including ferrets).
 
-```{r, mthCatchPFig, fig.height=4, fig.cap="\\label{mthCatchPFig}Trap catches summed over all traps for each monthly interval. Note: 'mustelid' includes only stoats and weasels (ferrets are included in 'other')."}
-par(mar=c(3,3,0.5,2), las=1, mgp=c(2.2, 0.8, 0))
+# Ditto for the previous year
+trap1PY <- table(obsMthPY, tlPY$Trap.1)
+trap2PY <- table(obsMthPY, tlPY$Trap.2)
+trap2PY <- trap2PY[, colnames(trap2PY)!='N/A']
+tt <- unique(c(colnames(trap1PY), colnames(trap2PY)))
+
+trap1PY <- cbind(trap1PY, matrix(0, nrow(trap1PY), sum(!(tt %in% colnames(trap1PY))),
+                                 dimnames=list(dimnames(trap1PY)[[1]],
+                                               tt[!(tt %in% colnames(trap1PY))])))
+trap2PY <- cbind(trap2PY, matrix(0, nrow(trap2PY), sum(!(tt %in% colnames(trap2PY))),
+                                 dimnames=list(dimnames(trap2PY)[[1]],
+                                               tt[!(tt %in% colnames(trap2PY))])))
+catchPY <- trap1PY[, tt] + trap2PY[, tt]
+catchPY <- catchPY[, match(unique(c(stdStat, allMammals)), colnames(catchPY))]
+catchPY <- cbind(catchPY[, 1:length(stdStat)],
+               Other=apply(catchPY[, -(1:length(stdStat))], 1, sum, na.rm=TRUE))
+catchPY <- cbind(catchPY, Total=apply(catchPY[, -1], 1, sum, na.rm=TRUE))
+
+# Next add in the number of traps per line (irrespective of whether some are missing)
+colnames(catchPY)[1] <- 'Sprung'
+
+# Add numbers caught per trap per month (x 100)
+catchPY <- cbind(catchPY, round(apply(catchPY[,-1], 2,
+                                      function(x) 100*x/(catchPY[,1]*(mth-1))), 1))
+```
+
+Figure \ref{mthCatchPFig} shows the catch per month summed over all lines for all mammals (total), rats, mustelids (stoats and weasels) and other mammals (including ferrets).  The figure includes the previous year's results for comparison.
+
+```{r, mthCatchPFig, fig.height=4, fig.cap="\\label{mthCatchPFig}Trap catches summed over all lines for each monthly interval. Previous year represented by dashed lines with the same colour coding.  Note: 'mustelid' includes only stoats and weasels (ferrets are included in 'other')."}
+par(mar=c(3,3,0.5,2), las=1, mgp=c(2.2, 0.8, 0), xpd=TRUE)
 tt <- catch[catch[,'Total']!=0,]
+ttPY <- catchPY
+ttPY[ttPY[,'Total']==0,] <- NA
+yLim <- c(0, max(c(tt[,'Total'], ttPY[,'Total']), na.rm=TRUE))
 plot(1:nrow(tt), tt[,'Total'], xlab='Month interval', ylab='Numbers caught',
-     ylim=c(0, max(tt[,'Total'])), xaxt='n', type='l', bty='n')
-axis(1, 1:nrow(tt), row.names(tt))
-axis(2, c(0, max(tt[,'Total'])), c('',''), tick=0)            
+     xlim=c(1,12), ylim=yLim, xaxt='n', type='l', bty='n')
+axis(1, 1:nrow(ttPY), row.names(ttPY))
+axis(2, yLim, c('',''), tck=0)            
 lines(1:nrow(tt), tt[,'Rat'], col='gray40')
 lines(1:nrow(tt), tt[,'Stoat']+tt[,'Weasel'], col='brown')
-# lines(1:nrow(tt), tt[,'Weasel'], col='wheat')
 lines(1:nrow(tt), tt[,'Other'], col='orange')
+
+# Previous year
+lines(1:nrow(ttPY), ttPY[,'Total'], lty='dashed')
+lines(1:nrow(ttPY), ttPY[,'Rat'], col='gray40', lty='dashed')
+lines(1:nrow(ttPY), ttPY[,'Stoat']+ttPY[,'Weasel'], col='brown', lty='dashed')
+lines(1:nrow(ttPY), ttPY[,'Other'], col='orange', lty='dashed')
+
 text(rep(nrow(tt)+0.1, 4), c(tt[nrow(tt),c('Total','Rat')]+c(2,-2),
                              tt[nrow(tt),'Stoat']+tt[nrow(tt),'Weasel']+2, tt[nrow(tt),'Other']-2),
      c('Total','Rat','Mustelid','Other'), adj=0, xpd=TRUE, cex=0.8,
@@ -284,22 +332,56 @@ catch <- trap1 + trap2
 catch[table(obsMth, tl$Line)==0] <- NA # put missing value in where line not checked
 catch <- catch[apply(catch, 1, function(x) length(x[!is.na(x)]))!=0,] # remove unchecked months
 catch <- 100*catch/matrix(nTrap, nrow(catch), ncol(catch), byrow=TRUE) # per trap
+
+# Previous year
+trap1PY <- table(obsMthPY, tlPY$Line, tlPY$Trap.1)
+trap2PY <- table(obsMthPY, tlPY$Line, tlPY$Trap.2)
+
+trap2PY <- trap2PY[, , dimnames(trap2PY)[[3]]!='N/A']
+tt <- unique(c(dimnames(trap1PY)[[3]], dimnames(trap2PY)[[3]]))
+
+appd <- array(0, replace(dim(trap1PY), 3, length(tt)-dim(trap1PY)[3]),
+              dimnames=list(dimnames(trap1PY)[[1]], dimnames(trap1PY)[[2]],
+                            tt[!(tt %in% dimnames(trap1PY)[[3]])]))
+trap1PY <- abind::abind(trap1PY, appd, along=3)
+
+appd <- array(0, replace(dim(trap2PY), 3, length(tt)-dim(trap2PY)[3]),
+              dimnames=list(dimnames(trap2PY)[[1]], dimnames(trap2PY)[[2]],
+                            tt[!(tt %in% dimnames(trap2PY)[[3]])]))
+trap2PY <- abind::abind(trap2PY, appd, along=3)
+
+mammals <- allMammals[allMammals %in% dimnames(trap1PY)[[3]]]
+trap1PY <- apply(trap1PY[,, mammals], 1:2, sum)
+trap2PY <- apply(trap2PY[,, mammals], 1:2, sum)
+
+catchPY <- trap1PY + trap2PY
+catchPY[table(obsMthPY, tlPY$Line)==0] <- NA # put missing value in where line not checked
+catchPY <- catchPY[apply(catchPY, 1, function(x) length(x[!is.na(x)]))!=0,] # remove unchecked months
+catchPY <- 100*catchPY/matrix(nTrap, nrow(catchPY), ncol(catchPY), byrow=TRUE) # per trap
+catchPY <- merge(as.data.frame(mthInt), catchPY, by.x='mthInt', by.y='row.names', all.x=TRUE)
+rownames(catchPY) <- catchPY[,1]
+catchPY <- as.matrix(catchPY[mthInt, -1])
 ```
 
-Figure \ref{mthCatchLFig} shows the monthly catch per trap ($\times$ 100) of all mammals for half of the lines on the top and for the other half on the bottom.  The colours half been chosen to roughly match those on the map supplied by DoC, and the line names have been abbreviated.
+Figure \ref{mthCatchLFig} shows the monthly catch per trap box ($\times$ 100) of all mammals for half of the lines on the top and for the other half on the bottom.  The colours have been chosen to roughly match those on the map supplied by DoC, and the line names have been abbreviated.  The previous year's results are also shown for comparison (although it is not always easy to distinguish the colours).
 
-```{r, mthCatchLFig, fig.height=6.3, fig.cap="\\label{mthCatchLFig}Monthly trap catch per trap ($\\times$ 100) of all mammals for each line. Some lines were not checked in some monthly periods, which is indicated by the disconnected lines. Note: the vertical scale on the two figures may differ."}
+```{r, mthCatchLFig, fig.height=6.3, fig.cap="\\label{mthCatchLFig}Monthly trap catch per trap ($\\times$ 100) of all mammals for each line. Some lines were not checked in some monthly periods, which is indicated by the disconnected lines. Previous year represented by dashed lines with the same colour coding. Note: the vertical scale on the two figures may differ."}
 par(mar=c(3,3,0,2.5), las=1, mgp=c(2.2, 0.8, 0), mfrow=c(2,1))
 tt <- catch[, colnames(catch) %in% c('Lewis Pass H/Way','Lockingtons','Marble Hill',
                                      'Maruia River','Kellys','Campground')]
+ttPY <- catchPY[, colnames(catchPY) %in% c('Lewis Pass H/Way','Lockingtons','Marble Hill',
+                                     'Maruia River','Kellys','Campground')]
 lCol <- c('gold','darkgreen','grey40','turquoise','lightgreen','pink3')
+yLim <- c(0, max(c(tt, ttPY), na.rm=TRUE))
 plot(1:nrow(tt), tt[,1], xlab='Month interval', ylab='Catch per trap (x100)',
-     ylim=c(0, max(tt, na.rm=TRUE)), xaxt='n', type='l', bty='n')
-axis(1, 1:nrow(tt), row.names(tt))
-axis(2, c(0, max(tt, na.rm=TRUE)), c('',''), tick=0)
+     xlim=c(1,12), ylim=yLim, xaxt='n', type='l', bty='n')
+axis(1, 1:12, mthInt)
+axis(2, yLim, c('',''), tck=0)
 
 for(i in 1:ncol(tt))
 {
+  lines(1:nrow(ttPY), ttPY[,i], col=lCol[i], lty='dashed')
+  points(1:nrow(ttPY), ttPY[,i], col=lCol[i], cex=0.5)
   lines(1:nrow(tt), tt[,i], col=lCol[i])
   points(1:nrow(tt), tt[,i], col=lCol[i], pch=16, cex=0.5)
   text(nrow(tt)+0.1, tt[nrow(tt), i], abbreviate(colnames(tt), 6)[i],
@@ -308,14 +390,19 @@ for(i in 1:ncol(tt))
 
 tt <- catch[, !(colnames(catch) %in% c('Lewis Pass H/Way','Lockingtons','Marble Hill',
                                        'Maruia River','Kellys','Campground'))]
+ttPY <- catchPY[, !(colnames(catchPY) %in% c('Lewis Pass H/Way','Lockingtons','Marble Hill',
+                                       'Maruia River','Kellys','Campground'))]
 lCol <- c('darkred','pink3','grey40','blue','red','green')
+yLim <- c(0, max(c(tt, ttPY), na.rm=TRUE))
 plot(1:nrow(tt), tt[,1], xlab='Month interval', ylab='Catch per trap (x100)',
-     ylim=c(0, max(tt, na.rm=TRUE)), xaxt='n', type='l', bty='n')
-axis(1, 1:nrow(tt), row.names(tt))
-axis(2, c(0, max(tt, na.rm=TRUE)), c('',''), tick=0)
+     xlim=c(1,12), ylim=yLim, xaxt='n', type='l', bty='n')
+axis(1, 1:12, mthInt)
+axis(2, yLim, c('',''), tck=0)
 
 for(i in 1:ncol(tt))
 {
+  lines(1:nrow(ttPY), ttPY[,i], col=lCol[i], lty='dashed')
+  points(1:nrow(ttPY), ttPY[,i], col=lCol[i], cex=0.5)
   lines(1:nrow(tt), tt[,i], col=lCol[i])
   points(1:nrow(tt), tt[,i], col=lCol[i], pch=16, cex=0.5)
   text(nrow(tt)+0.1, tt[nrow(tt), i], abbreviate(colnames(tt), 6)[i],
