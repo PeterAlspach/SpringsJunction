@@ -27,6 +27,7 @@ library(kableExtra)
 # Set the working directory and read the data
 setwd('~/GitHub/SpringsJunction/TrapLines')
 tl <- read.csv('TrapCatches.csv', header=TRUE, sep=',', stringsAsFactors=FALSE)
+tl18 <- read.csv('TrapCatches2018.csv', header=TRUE, sep=',', stringsAsFactors=FALSE)
 
 # Rename traps with only a single digit 'd' to '0d'
 relNo <- tl[grep('[[:upper:]][[:digit:]]{1}$', tl$Tag.No), 'Tag.No']
@@ -56,4 +57,14 @@ obsMth <- cut(tl$jDay, c(cutDays, 365+15+floor((4.001-yr%%4)/4)),
 # Set the standard trap status of interest
 stdStat <- c('Sprung and Empty','Rat','Stoat','Weasel') # standard trap status
 allMammals <- c('Rat','Stoat','Weasel','Cat','Ferret','Mouse','Rabbit','Hedgehog','Hare','Possum')
+```
+
+```{r nilCatch}
+tlAll <- rbind(tl18, tl[,-16])
+ttTab <- with(tlAll[tlAll$Line=='Lake Daniell Terrace',], table(Trap.No, Trap.1))
+rownames(ttTab[apply(ttTab[, c("Still Set","Still Set Bait Eaten")], 1, sum, na.rm=TRUE)==
+                 apply(ttTab, 1, sum, na.rm=TRUE),])
+tlAll[regexpr('(Needs)|(rusty)|(broken)', tlAll$Comment)>0 & regexpr('Lake', tlAll$Line)>0,
+      c('Line','Trap.No','Comment')]
+with(tlAll[regexpr('(Needs)|(rusty)|(broken)', tlAll$Comment)>0,], table(Comment, Trap.No, Line))
 ```
