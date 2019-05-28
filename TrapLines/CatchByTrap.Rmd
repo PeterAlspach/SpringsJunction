@@ -61,10 +61,22 @@ allMammals <- c('Rat','Stoat','Weasel','Cat','Ferret','Mouse','Rabbit','Hedgehog
 
 ```{r nilCatch}
 tlAll <- rbind(tl18, tl[,-16])
-ttTab <- with(tlAll[tlAll$Line=='Lake Daniell Terrace',], table(Trap.No, Trap.1))
-rownames(ttTab[apply(ttTab[, c("Still Set","Still Set Bait Eaten")], 1, sum, na.rm=TRUE)==
-                 apply(ttTab, 1, sum, na.rm=TRUE),])
-tlAll[regexpr('(Needs)|(rusty)|(broken)', tlAll$Comment)>0 & regexpr('Lake', tlAll$Line)>0,
-      c('Line','Trap.No','Comment')]
-with(tlAll[regexpr('(Needs)|(rusty)|(broken)', tlAll$Comment)>0,], table(Comment, Trap.No, Line))
+lID <- unique(tlAll$Line)
+nilCatch <- vector('list', length(lID))
+names(nilCatch) <- lID
+for (i in lID)
+{
+  ttTab <- with(tlAll[tlAll$Line==i,], table(Trap.No, Trap.1))
+  if ('Still Set Bait Taken' %in% colnames(ttTab))
+  {
+    ttNone <- apply(ttTab[, c("Still Set","Still Set Bait Eaten")], 1, sum, na.rm=TRUE)
+    nilCatch[[i]] <- rownames(ttTab[ttNone==apply(ttTab, 1, sum, na.rm=TRUE),])
+  } else nilCatch[[i]] <- rownames(ttTab[ttTab[, "Still Set"]==apply(ttTab, 1, sum, na.rm=TRUE),])
+}
+```
+
+```{r needsMaintenance}
+ttRecent <- tlAll[tlAll$Date.Checked > Sys.Date()-60,]
+with(ttRecent[regexpr('(needs)|(maint)|(replac)|(broken)|(reset)', ttRecent$Comment)>0,],
+     table(Comment, Trap.No, Line))
 ```
