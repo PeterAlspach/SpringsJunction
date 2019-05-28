@@ -1,0 +1,93 @@
+---
+title: "Maruia Trap-lines: Traps to check"
+author: "Peter Alspach"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+    pdf_document:
+  # html_document:
+  # html_notebook:
+    theme: spacelab
+    toc: yes
+    toc_depth: 5
+    # toc_float: yes
+    # code_folding: hide
+---
+
+<!-- To do: -->
+<!-- Mammals are defined at the end of the 'getReady' chunk (about line 55) -->
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, cache=FALSE, error=TRUE)
+library(knitr)
+library(kableExtra)
+```
+## Introduction
+
+```{r readData}
+# Set the working directory and read the data
+setwd('~/GitHub/SpringsJunction/TrapLines')
+tl <- read.csv('TrapCatches.csv', header=TRUE, sep=',', stringsAsFactors=FALSE)
+tl18 <- read.csv('TrapCatches2018.csv', header=TRUE, sep=',', stringsAsFactors=FALSE)
+
+# Rename traps with only a single digit 'd' to '0d'
+relNo <- tl[grep('[[:upper:]][[:digit:]]{1}$', tl$Tag.No), 'Tag.No']
+relNo <- paste0(substring(relNo, 1, nchar(relNo)-1), '0', substring(relNo, nchar(relNo)))
+tl[grep('[[:upper:]][[:digit:]]{1}$', tl$Tag.No), 'Tag.No'] <- relNo
+
+# Remove time from date stamp
+tl$Date.Checked <- substring(tl$Date.Checked, 1, 10)
+tl$jDay <- julian.Date(as.Date(tl$Date.Checked), origin=as.Date('2017-12-31'))
+```
+
+```{r getReady}
+# Set the cut-off dates for the monthly intervals
+lastDate <- sort(tl$Date.Checked, decreasing=TRUE)[1]
+yr <- as.integer(substring(lastDate, 1, 4))
+mth <- as.integer(substring(lastDate, 6, 7))
+cutDays <- paste(yr, c(paste0('0', 1:9), 10:12), '15', sep='-') # cut at the middle of the month 
+cutDays <- julian.Date(as.Date(cutDays), origin=as.Date(paste0(yr-1, '-12-31')))
+obsMth <- cut(tl$jDay, c(cutDays, 365+15+floor((4.001-yr%%4)/4)), 
+              labels=c('J-F', 'F-M', 'M-A','A-M', 'M-J', 'J-J',
+                       'J-A', 'A-S', 'S-O', 'O-N', 'N-D', 'D-J'))
+
+# Set the standard trap status of interest
+stdStat <- c('Sprung and Empty','Rat','Stoat','Weasel') # standard trap status
+allMammals <- c('Rat','Stoat','Weasel','Cat','Ferret','Mouse','Rabbit','Hedgehog','Hare','Possum')
+```
+
+This report is intended to highlight traps that may need checking, either because they have failed to catch anything during the last 12 months or a recent comment indicates that maintenance is required.
+
+```{r nilCatch}
+tlAll <- rbind(tl18, tl[,-16])
+lID <- unique(tlAll$Line)
+chk <- vector('list', length(lID))
+names(chk) <- lID
+for (i in lID)
+{
+  chk[[i]] <- vector('list', 2)
+  names(chk[[i]]) <- c('nilCatch','needsMaintenance')
+
+# Nil catch recently (last 400 days as set in the next line)
+  ttRecent <- tlAll[tlAll$Date.Checked > Sys.Date()-400,] # roughly last 12 months
+  ttTab <- with(ttRecent[ttRecent$Line==i,], table(Trap.No, Trap.1))
+  if ('Still Set Bait Taken' %in% colnames(ttTab))
+  {
+    ttNone <- apply(ttTab[, c("Still Set","Still Set Bait Eaten")], 1, sum, na.rm=TRUE)
+    chk[[i]][[1]] <- rownames(ttTab[ttNone==apply(ttTab, 1, sum, na.rm=TRUE),])
+  } else chk[[i]][[1]] <- rownames(ttTab[ttTab[, "Still Set"]==apply(ttTab, 1, sum, na.rm=TRUE),])
+
+# Recent comments (last 60 days as set in the next line) indicate that the trap need maintenance
+  ttRecent <- tlAll[tlAll$Date.Checked > Sys.Date()-60,] # roughly last couple of months
+  ttTrap <- ttRecent[regexpr('(needs)|(maint)|(replac)|(broken)|(reset)', ttRecent$Comment)>0 &
+                       ttRecent$Line==i,]
+  chk[[i]][[2]] <- ttTrap[!duplicated(ttTrap$Trap.No), c('Trap.No', 'Comment')]
+  }
+```
+
+What follows is a horribly formatted list, which I hope to improve sometime:
+
+```{r toCheck}
+chk
+```
+
+
