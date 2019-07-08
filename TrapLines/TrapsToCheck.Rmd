@@ -65,7 +65,7 @@ names(chk) <- lID
 for (i in lID)
 {
   chk[[i]] <- vector('list', 2)
-  names(chk[[i]]) <- c('nilCatch','needsMaintenance')
+  names(chk[[i]]) <- c('nilCatch','needsAttention')
 
 # Nil catch recently (last 400 days as set in the next line)
   ttRecent <- tlAll[tlAll$Date.Checked > Sys.Date()-400,] # roughly last 12 months
@@ -73,15 +73,26 @@ for (i in lID)
   if ('Still Set Bait Taken' %in% colnames(ttTab))
   {
     ttNone <- apply(ttTab[, c("Still Set","Still Set Bait Eaten")], 1, sum, na.rm=TRUE)
-    chk[[i]][[1]] <- rownames(ttTab[ttNone==apply(ttTab, 1, sum, na.rm=TRUE),])
-  } else chk[[i]][[1]] <- rownames(ttTab[ttTab[, "Still Set"]==apply(ttTab, 1, sum, na.rm=TRUE),])
+    tt <- rownames(ttTab[ttNone==apply(ttTab, 1, sum, na.rm=TRUE),])
+    if (!is.null(tt)) chk[[i]][[1]] <- tt
+  } else
+  {
+    tt <- rownames(ttTab[ttTab[, "Still Set"]==apply(ttTab, 1, sum, na.rm=TRUE),])
+    if (!is.null(tt)) chk[[i]][[1]] <- tt
+  }
 
 # Recent comments (last 60 days as set in the next line) indicate that the trap need maintenance
   ttRecent <- tlAll[tlAll$Date.Checked > Sys.Date()-60,] # roughly last couple of months
-  ttTrap <- ttRecent[regexpr('(needs)|(maint)|(replac)|(broken)|(reset)', ttRecent$Comment)>0 &
+  ttTrap <- ttRecent[(regexpr('(needs)|(maint)|(replac)|(broken)|(reset)', ttRecent$Comment)>0 |
+                      regexpr('(Closed)|(Maint)|(Miss)', ttRecent$Status)>0)  &
                        ttRecent$Line==i,]
-  chk[[i]][[2]] <- ttTrap[!duplicated(ttTrap$Trap.No), c('Trap.No', 'Comment')]
-  }
+  if (!is.null(ttTrap))
+  {
+    TT <- ttTrap[nrow(ttTrap):1,]
+    TT <- TT[!duplicated(TT$Trap.No), c('Trap.No', 'Status', 'Comment')]
+    chk[[i]][[2]] <- TT[nrow(TT):1,]
+  } else chk[[i]][[2]] <- NULL
+}
 ```
 
 What follows is a horribly formatted list, which I hope to improve sometime:
