@@ -1,0 +1,23 @@
+---
+title: "Maruia Trap-lines: Monthly Catch by Location"
+author: "Peter Alspach"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+    pdf_document:
+  # html_document:
+  # html_notebook:
+    theme: spacelab
+    toc: yes
+    toc_depth: 5
+    # toc_float: yes
+    # code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, cache=FALSE, error=TRUE)
+library(knitr)
+```
+```{r readWayPts, include=FALSE}
+load('TrapCoordinates.RData')
+```
+

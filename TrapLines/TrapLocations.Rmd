@@ -1,0 +1,138 @@
+---
+title: "Maruia Trap-lines: Trap Locations"
+author: "Peter Alspach"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+    pdf_document:
+  # html_document:
+  # html_notebook:
+    theme: spacelab
+    toc: yes
+    toc_depth: 5
+    # toc_float: yes
+    # code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, cache=FALSE, error=TRUE)
+library(knitr)
+library(maptools)
+```
+This code reads the trap locations (longitudes and latitudes) from the GPS waypoint files, and saves them as an R dataset for later use.
+
+```{r readWayPts, include=FALSE}
+# Read the .gpx files
+trapLoc01 <- readGPS('gpx', 'Alfred4x4.gpx', 'w')
+trapLoc02 <- readGPS('gpx', 'Campground.gpx', 'w')
+trapLoc03 <- readGPS('gpx', 'FergusonsFlat.gpx', 'w')
+trapLoc04 <- readGPS('gpx', 'Kellys.gpx', 'w')
+trapLoc05 <- readGPS('gpx', 'LakeDaniellTerrace.gpx', 'w')
+trapLoc06 <- readGPS('gpx', 'LakeDaniellTrack.gpx', 'w')
+trapLoc07 <- readGPS('gpx', 'Lockingtons.gpx', 'w')
+trapLoc08 <- readGPS('gpx', 'MarbleHill.gpx', 'w')
+trapLoc09 <- readGPS('gpx', 'MaruiaRiver.gpx', 'w')
+trapLoc10 <- readGPS('gpx', 'PellTerrace.gpx', 'w')
+trapLoc11 <- readGPS('gpx', 'Reids.gpx', 'w')
+trapLoc12 <- readGPS('gpx', 'StateHighway.gpx', 'w')
+```
+
+The reading isn't perfect and thus each dataframe needs a bit of manual adjustment.
+
+```{r correctDF, include=FALSE}
+# Alfred4x4
+tt01 <- trapLoc01[, c(2,6,7)]
+tt01[,1] <- as.character(tt01[,1])
+for (i in 2:3) tt01[,i] <- as.numeric(as.character(tt01[,i]))
+names(tt01) <- c('Trap','S','E')
+for (i in 6:13) trapLoc01[,i] <- as.numeric(as.character(trapLoc01[,i]))
+tt01[c(39,46), 2:3] <- trapLoc01[c(39,46), 10:11]
+tt01 <- tt01[!is.na(tt01[,2]),]
+tt01 <- tt01[order(tt01[,1]),]
+
+# Campground (no adjustment necessary)
+tt02 <- trapLoc02[, c(2,6,7)]
+tt02[,1] <- as.character(tt02[,1])
+for (i in 2:3) tt02[,i] <- as.numeric(as.character(tt02[,i]))
+names(tt02) <- c('Trap','S','E')
+
+# FergusonsFlat
+tt03 <- trapLoc03[, c(2,6,7)]
+tt03[,1] <- as.character(tt03[,1])
+for (i in 2:3) tt03[,i] <- as.numeric(as.character(tt03[,i]))
+names(tt03) <- c('Trap','S','E')
+for (i in 6:13) trapLoc03[,i] <- as.numeric(as.character(trapLoc03[,i]))
+tt03[17, 2:3] <- trapLoc03[17,8:9]
+tt03[17,1] <- 'FF24'
+tt03 <- tt03[!is.na(tt03[,2]),]
+tt03 <- tt03[order(tt03[,1]),]
+plot(tt03[,2], tt03[,3], type='n')
+text(tt03[,2], tt03[,3], substring(tt03[,1], 3), cex=0.6)
+
+# Kellys (no adjustment necessary)
+tt04 <- trapLoc04[, c(2,6,7)]
+tt04[,1] <- as.character(tt04[,1])
+for (i in 2:3) tt04[,i] <- as.numeric(as.character(tt04[,i]))
+names(tt04) <- c('Trap','S','E')
+
+# LakeDaniellTerrace (no adjustment necessary)
+tt05 <- trapLoc05[, c(2,6,7)]
+tt05[,1] <- as.character(tt05[,1])
+for (i in 2:3) tt05[,i] <- as.numeric(as.character(tt05[,i]))
+names(tt05) <- c('Trap','S','E')
+
+# LakeDaniellTrack (no adjustment necessary)
+tt06 <- trapLoc06[, c(2,6,7)]
+tt06[,1] <- as.character(tt06[,1])
+for (i in 2:3) tt06[,i] <- as.numeric(as.character(tt06[,i]))
+names(tt06) <- c('Trap','S','E')
+
+# Lockingtons (no adjustment necessary)
+tt07 <- trapLoc07[, c(2,6,7)]
+tt07[,1] <- as.character(tt07[,1])
+for (i in 2:3) tt07[,i] <- as.numeric(as.character(tt07[,i]))
+names(tt07) <- c('Trap','S','E')
+
+# MarbleHill (no adjustment necessary)
+tt08 <- trapLoc08[, c(2,6,7)]
+tt08[,1] <- as.character(tt08[,1])
+for (i in 2:3) tt08[,i] <- as.numeric(as.character(tt08[,i]))
+names(tt08) <- c('Trap','S','E')
+
+# MaruiaRiver (no adjustment necessary)
+tt09 <- trapLoc09[, c(2,6,7)]
+tt09[,1] <- as.character(tt09[,1])
+for (i in 2:3) tt09[,i] <- as.numeric(as.character(tt09[,i]))
+names(tt09) <- c('Trap','S','E')
+
+# PellTerrace
+tt10 <- trapLoc10[, c(2,6,7)]
+tt10[,1] <- as.character(tt10[,1])
+for (i in 2:3) tt10[,i] <- as.numeric(as.character(tt10[,i]))
+names(tt10) <- c('Trap','S','E')
+for (i in 6:13) trapLoc10[,i] <- as.numeric(as.character(trapLoc10[,i]))
+tt10[30, 2:3] <- trapLoc10[38,7:8]
+tt10 <- tt10[!is.na(tt10[,2]),]
+tt10 <- tt10[order(tt10[,1]),]
+
+# Reids
+tt11 <- trapLoc11[, c(2,6,7)]
+tt11[,1] <- as.character(tt11[,1])
+for (i in 2:3) tt11[,i] <- as.numeric(as.character(tt11[,i]))
+names(tt11) <- c('Trap','S','E')
+for (i in 6:13) trapLoc11[,i] <- as.numeric(as.character(trapLoc11[,i]))
+tt11[c(23,27), 2:3] <- trapLoc11[c(23,27), 10:11]
+tt11 <- tt11[!is.na(tt11[,2]),]
+tt11 <- tt11[order(tt11[,1]),]
+
+# StateHighway (no adjustment necessary)
+tt12 <- trapLoc12[, c(2,6,7)]
+tt12[,1] <- as.character(tt12[,1])
+for (i in 2:3) tt12[,i] <- as.numeric(as.character(tt12[,i]))
+names(tt12) <- c('Trap','S','E')
+```
+
+```{r combineAll}
+trapLoc <- rbind(tt01, tt02, tt03, tt04, tt05, tt06, tt07, tt08, tt09, tt10, tt11, tt12)
+trapLoc <- trapLoc[order(trapLoc[,1]),]
+save(trapLoc, file='TrapCoordinates.RData')
+```
