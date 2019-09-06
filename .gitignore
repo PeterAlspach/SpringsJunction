@@ -33,6 +33,7 @@ DataManagement/reexceltipsandtricks/
 *.csv
 *.doc
 *.docx
+*.gpx
 *.html
 # !*.nb.html
 *.lnk
