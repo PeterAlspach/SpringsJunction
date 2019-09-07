@@ -469,3 +469,64 @@ kable(chkTab, 'latex', booktabs=TRUE) %>%
   kable_styling(latex_options="hold_position") %>%
   column_spec(1:3, color='gray')
 ```
+```{r mthCatchT}
+# Get monthly catch summary for each trap
+# First tabulate the number of pests caught
+trap1 <- table(obsMth, tl$Tag.No, tl$Trap.1)
+# trap1 <- apply(trap1[,, c('Rat','Stoat','Weasel','Cat','Ferret','Mouse','Rabbit')], 1:2, sum)
+trap2 <- table(obsMth, tl$Tag.No, tl$Trap.2)
+# trap2 <- apply(trap2[,, c('Rat','Stoat','Weasel','Cat','Ferret','Mouse','Rabbit')], 1:2, sum)
+trap2 <- trap2[, , dimnames(trap2)[[3]]!='N/A']
+tt <- unique(c(dimnames(trap1)[[3]], dimnames(trap2)[[3]]))
+# Append to trap1 if necessary
+appd <- array(0, replace(dim(trap1), 3, length(tt)-dim(trap1)[3]),
+              dimnames=list(dimnames(trap1)[[1]], dimnames(trap1)[[2]],
+                            tt[!(tt %in% dimnames(trap1)[[3]])]))
+trap1 <- abind::abind(trap1, appd, along=3)
+# Append to trap2
+appd <- array(0, replace(dim(trap2), 3, length(tt)-dim(trap2)[3]),
+              dimnames=list(dimnames(trap2)[[1]], dimnames(trap2)[[2]],
+                            tt[!(tt %in% dimnames(trap2)[[3]])]))
+trap2 <- abind::abind(trap2, appd, along=3)
+# Only interested in mammalian catch
+mammals <- allMammals[allMammals %in% dimnames(trap1)[[3]]]
+trap1 <- apply(trap1[,, mammals], 1:2, sum)
+trap2 <- apply(trap2[,, mammals], 1:2, sum)
+
+catch <- trap1 + trap2
+
+# Previous year
+trap1PY <- table(obsMthPY, tlPY$Tag.No, tlPY$Trap.1)
+trap2PY <- table(obsMthPY, tlPY$Tag.No, tlPY$Trap.2)
+
+trap2PY <- trap2PY[, , dimnames(trap2PY)[[3]]!='N/A']
+tt <- unique(c(dimnames(trap1PY)[[3]], dimnames(trap2PY)[[3]]))
+
+appd <- array(0, replace(dim(trap1PY), 3, length(tt)-dim(trap1PY)[3]),
+              dimnames=list(dimnames(trap1PY)[[1]], dimnames(trap1PY)[[2]],
+                            tt[!(tt %in% dimnames(trap1PY)[[3]])]))
+trap1PY <- abind::abind(trap1PY, appd, along=3)
+
+appd <- array(0, replace(dim(trap2PY), 3, length(tt)-dim(trap2PY)[3]),
+              dimnames=list(dimnames(trap2PY)[[1]], dimnames(trap2PY)[[2]],
+                            tt[!(tt %in% dimnames(trap2PY)[[3]])]))
+trap2PY <- abind::abind(trap2PY, appd, along=3)
+
+mammals <- allMammals[allMammals %in% dimnames(trap1PY)[[3]]]
+trap1PY <- apply(trap1PY[,, mammals], 1:2, sum)
+trap2PY <- apply(trap2PY[,, mammals], 1:2, sum)
+
+catchPY <- trap1PY + trap2PY
+
+# Combine catch and catchPY to get 12 months data in order
+catch <- t(catch)
+catchPY <- t(catchPY)
+catch <- catch[, apply(catch, 2, function(x) length(x[!is.na(x)]))!=0]
+catch12m <- cbind(catchPY[,-(1:ncol(catch))], catch)
+```
+
+```{r trapCoords}
+load('TrapCoordinates.RData') # Waypoints (saved by TrapLocations.Rmd)
+
+```
+
