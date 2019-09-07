@@ -469,6 +469,7 @@ kable(chkTab, 'latex', booktabs=TRUE) %>%
   kable_styling(latex_options="hold_position") %>%
   column_spec(1:3, color='gray')
 ```
+
 ```{r mthCatchT}
 # Get monthly catch summary for each trap
 # First tabulate the number of pests caught
@@ -521,12 +522,41 @@ catchPY <- trap1PY + trap2PY
 # Combine catch and catchPY to get 12 months data in order
 catch <- t(catch)
 catchPY <- t(catchPY)
-catch <- catch[, apply(catch, 2, function(x) length(x[!is.na(x)]))!=0]
+catch <- catch[, apply(catch, 2, function(x) length(x[x!=0 & !is.na(x)])!=0)]
 catch12m <- cbind(catchPY[,-(1:ncol(catch))], catch)
 ```
 
 ```{r trapCoords}
 load('TrapCoordinates.RData') # Waypoints (saved by TrapLocations.Rmd)
 
+# Rename Tag.No to match Waypoints
+trap <- row.names(catch12m)
+trap[substring(trap, 1, 1)=='A'] <- sub('A', 'ALF', trap[substring(trap, 1, 1)=='A'])
+trap[substring(trap, 1, 1)=='B'] <- sub('B', 'X', trap[substring(trap, 1, 1)=='B']) # dummy substitution
+trap[substring(trap, 1, 1)=='E'] <- sub('E', 'EE', trap[substring(trap, 1, 1)=='E'])
+trap[substring(trap, 1, 1)=='F'] <- sub('F', 'FF', trap[substring(trap, 1, 1)=='F'])
+trap[substring(trap, 1, 1)=='K'] <- sub('K', 'AK', trap[substring(trap, 1, 1)=='K'])
+trap[substring(trap, 1, 1)=='M'] <- sub('M', 'MBL', trap[substring(trap, 1, 1)=='M'])
+trap[substring(trap, 1, 1)=='X'] <- sub('X', 'MRB', trap[substring(trap, 1, 1)=='X']) # actual substitution
+trap[substring(trap, 1, 1)=='P'] <- sub('P', 'PS', trap[substring(trap, 1, 1)=='P'])
+trap[substring(trap, 1, 1)=='R'] <- sub('RS', 'RDS', trap[substring(trap, 1, 1)=='R'])
+trap[substring(trap, 1, 1)=='S'] <- sub('SH', 'SHY', trap[substring(trap, 1, 1)=='S'])
+trap[substring(trap, 1, 1)=='T'] <- sub('T', 'LDT', trap[substring(trap, 1, 1)=='T'])
+row.names(catch12m) <- trap
+
+# Merge trapLoc with catch12m
+catch12m <- merge(trapLoc, catch12m, by.x='Trap', by.y='row.names')
+
+cumCatch <- catch12m
+cumCatch[, ncol(cumCatch):4] <- t(apply(cumCatch[, ncol(cumCatch):4], 1, cumsum))
+
+par(mar=rep(0, 4))
+with(catch12m, plot(E, S, cex=0.4, col='grey50', axes=FALSE, xlab='', ylab=''))
+i <- 4
+for (i in 4:ncol(catch12m))
+{  
+  points(catch12m[catch12m[,i]!=0, c('E', 'S')], cex=cumCatch[catch12m[,i]!=0, 4]/2,
+       pch=16, col=paste0('grey', seq(8, 96, 8)[i-3]))
+}
 ```
 
