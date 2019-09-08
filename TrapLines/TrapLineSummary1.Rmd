@@ -17,7 +17,7 @@ output:
 <!-- Mammals are defined at the end of the 'getReady' chunk (about line 58) -->
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo=FALSE, cache=FALSE, error=TRUE)
+knitr::opts_chunk$set(echo=FALSE, cache=TRUE, error=TRUE)
 library(knitr)
 library(kableExtra)
 ```
@@ -469,6 +469,12 @@ kable(chkTab, 'latex', booktabs=TRUE) %>%
   kable_styling(latex_options="hold_position") %>%
   column_spec(1:3, color='gray')
 ```
+\pagebreak
+\color{black}
+
+## Catch by Trap
+
+It may be of interest to know which traps are catching the most mammals.  This is shown in the following 'maps'^[No attempt has been made to ensure that the aspect ratio of the maps is correct.  This will be addressed in future.] (Figures \ref{mthTrapCatch1}, \ref{mthTrapCatch2} and \ref{mthTrapCatch3}).  These are a little complicated.  Each map shows a collection of lines, and the location of the traps on these lines.  The symbols indicate the cumulative catch over the previous twelve months such that the diameter of the cycle is proportional to the number of mammals caught, and the colour of the ring indicates the number of months prior to the current.  Thus, the lack of yellow-shaded rings for the Campground (Figure \ref{mthTrapCatch2} or \ref{mthTrapCatch3}) shows that no mammals were caught on this line 9-12 months ago, although more recently these traps have caught a good number of mammals.  Also, one can see traps 4, 9 and 10 have not caught anything during the last year, which is because these traps are missing.
 
 ```{r mthCatchT}
 # Get monthly catch summary for each trap
@@ -551,30 +557,99 @@ cumCatch <- catch12m
 cumCatch[, ncol(cumCatch):4] <- t(apply(cumCatch[, ncol(cumCatch):4], 1, cumsum))
 
 lineGrps <- vector('list', 3)
-lineGrps[[1]] <- c('ALF','PS','LD','LDT','RDS')
-lineGrps[[2]] <- c('SHY','CG')
-lineGrps[[3]] <- c('CG','EE','MBL','MRB','AK','FF')
+lineGrps[[1]] <- c('ALF','LD','LDT','PS','RDS')
+lineGrps[[2]] <- c('CG','SHY')
+lineGrps[[3]] <- c('AK','CG','EE','FF','MBL','MRB')
+```
 
+```{r, mthTrapCatch1, fig.height=10, fig.width=8, fig.cap="\\label{mthTrapCatch1}Map of the Lake Daniell lines (i.e., Lake Daniell Track and Terrace, Alfred 4x4, Pell Terrace and Reid Stream).  Each line is colour-coded as indicated.  The point diameters are proportional to the cumulative catch, and the colour indicates when the mammal was caught (months prior to the present).  An open grey circle indicates a trap which has caught nothing in the past 12 months.  Note, the GPS locations of traps 46-48 on Reid Stream are not current, and the GPS trap numbers on Alfred 4x4 are slightly out of synchrony with the actual trap numbers."}
 par(mar=rep(0, 4))
 ttCols <- viridisLite::inferno(ncol(catch12m)-3)
 
-for (lns in 1:length(lineGrps))
+# for (lns in 1:length(lineGrps))
+lns <- 1
 {  
   ttLines <- catch12m[gsub('[[:digit:]]', '', catch12m$Trap) %in% lineGrps[[lns]],]
   ttCum <- cumCatch[gsub('[[:digit:]]', '', cumCatch$Trap) %in% lineGrps[[lns]],]
-  with(ttLines, plot(E, S, cex=0.4, col='grey50', axes=FALSE, xlab='', ylab=''))
+  with(ttLines, plot(E, S, cex=0.7, col='grey50', axes=FALSE, xlab='', ylab=''))
   for (i in 4:ncol(catch12m))
   {  
-    # points(ttLines[ttLines[,i]!=0, c('E', 'S')], pch=16, col=paste0('grey', seq(96, 8, -8)[i-3]),
     points(ttLines[ttLines[,i]!=0, c('E', 'S')], pch=16, col=ttCols[ncol(catch12m)+1-i],
            cex=ttCum[ttLines[,i]!=0, i]/2)
   }
+  lCols <- c(ALF='magenta', LD='blue', LDT='darkred', PS='red', RDS='green')
+  for (i in lineGrps[[lns]])
+  {
+    with(ttLines[gsub('[[:digit:]]', '', ttLines$Trap)==i,], lines(E, S, col=lCols[i]))
+  }
+  legend('bottomright', legend=c('Alfred 4x4 Track', 'Lake Daniell Track', 'Lake Daniell Terrace',
+                                 'Pell TGerrace', 'Reids Stream'),
+         lty=1, col=lCols, bty='n')
+  legend('top', legend=c('Current', '3 months ago', '6 months ago', '9 months ago', '12 months ago'),
+         pch=16, col=ttCols[c(1,3,6,9,12)], bty='n')
 }
 # To do:
-#   Add key
 #   Ensure aspect ratio is correct
-#   Add line labels (maybe) - perhaps colour coded line joining the traps (before or after points?)
 #   Add actual map (maybe)
-#   Write report around it
 ```
 
+```{r, mthTrapCatch2, fig.height=10, fig.width=8, fig.cap="\\label{mthTrapCatch2}Map of the Lewis Pass H/Way and Campground lines.  Each line is colour-coded as indicated.  The point diameters are proportional to the cumulative catch, and the colour indicates when the mammal was caught (months prior to the present).  An open grey circle indicates a trap which has caught nothing in the past 12 months."}
+par(mar=rep(0, 4))
+ttCols <- viridisLite::inferno(ncol(catch12m)-3)
+
+# for (lns in 1:length(lineGrps))
+lns <- 2
+{  
+  ttLines <- catch12m[gsub('[[:digit:]]', '', catch12m$Trap) %in% lineGrps[[lns]],]
+  ttCum <- cumCatch[gsub('[[:digit:]]', '', cumCatch$Trap) %in% lineGrps[[lns]],]
+  with(ttLines, plot(E, S, cex=0.7, col='grey50', axes=FALSE, xlab='', ylab=''))
+  for (i in 4:ncol(catch12m))
+  {  
+    points(ttLines[ttLines[,i]!=0, c('E', 'S')], pch=16, col=ttCols[ncol(catch12m)+1-i],
+           cex=ttCum[ttLines[,i]!=0, i]/2)
+  }
+  lCols <- c(CG='gold', SHY='grey40')
+  for (i in lineGrps[[lns]])
+  {
+    with(ttLines[gsub('[[:digit:]]', '', ttLines$Trap)==i,], lines(E, S, col=lCols[i]))
+  }
+  legend('bottomleft', legend=c('Campground', 'Lewis Pass H/Way'),
+         lty=1, col=lCols, bty='n')
+  legend('top', legend=c('Current', '3 months ago', '6 months ago', '9 months ago', '12 months ago'),
+         pch=16, col=ttCols[c(1,3,6,9,12)], bty='n')
+}
+# To do:
+#   Ensure aspect ratio is correct
+#   Add actual map (maybe)
+```
+
+```{r, mthTrapCatch3, fig.height=10, fig.width=8, fig.cap="\\label{mthTrapCatch3}Map of the remaining lines (i.e., Campground, Lockingtons, Fergusons Flat, Kellys, Marble Hill and Maruia River).  Each line is colour-coded as indicated.  The point diameters are proportional to the cumulative catch, and the colour indicates when the mammal was caught (months prior to the present).  An open grey cirlce indicates a trap which has caught nothing in the past 12 months."}
+par(mar=rep(0, 4))
+ttCols <- viridisLite::inferno(ncol(catch12m)-3)
+
+# for (lns in 1:length(lineGrps))
+lns <- 3
+{  
+  ttLines <- catch12m[gsub('[[:digit:]]', '', catch12m$Trap) %in% lineGrps[[lns]],]
+  ttCum <- cumCatch[gsub('[[:digit:]]', '', cumCatch$Trap) %in% lineGrps[[lns]],]
+  with(ttLines, plot(E, S, cex=0.7, col='grey50', axes=FALSE, xlab='', ylab=''))
+  for (i in 4:ncol(catch12m))
+  {  
+    points(ttLines[ttLines[,i]!=0, c('E', 'S')], pch=16, col=ttCols[ncol(catch12m)+1-i],
+           cex=ttCum[ttLines[,i]!=0, i]/2)
+  }
+  lCols <- c(CG='gold', EE='turquoise', FF='pink', AK='darkgreen', MBL='lightgreen', MRB='pink3')
+  for (i in lineGrps[[lns]])
+  {
+    with(ttLines[gsub('[[:digit:]]', '', ttLines$Trap)==i,], lines(E, S, col=lCols[i]))
+  }
+  legend('right', legend=c('Campground', 'Lockingtons', 'Fergusons Flat', 'Kellys',
+                                 'Marble Hill', 'Maruia River'),
+         lty=1, col=lCols, bty='n')
+  legend('topright', legend=c('Current', '3 months ago', '6 months ago', '9 months ago', '12 months ago'),
+         pch=16, col=ttCols[c(1,3,6,9,12)], bty='n')
+}
+# To do:
+#   Ensure aspect ratio is correct
+#   Add actual map (maybe)
+```
