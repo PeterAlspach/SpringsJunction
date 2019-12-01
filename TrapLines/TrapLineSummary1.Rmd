@@ -17,7 +17,7 @@ output:
 <!-- Mammals are defined at the end of the 'getReady' chunk (about line 58) -->
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo=FALSE, cache=TRUE, error=TRUE)
+knitr::opts_chunk$set(echo=FALSE, cache=FALSE, error=TRUE)
 library(knitr)
 library(kableExtra)
 ```
@@ -112,7 +112,12 @@ catch <- cbind(catch, Total=apply(catch[, -1], 1, sum, na.rm=TRUE))
 # Next add in the number of traps per line (irrespective of whether some are missing)
 nTrap <- table(tl$Line, gsub('([[:upper:]]+)([[:digit:]]+)', '\\2', tl$Tag.No))
 nTrap <- apply(nTrap, 1, function(x) length(x[x!=0]))
-catch <- merge(nTrap, catch, by='row.names', all=TRUE)
+
+cM1 <- currMth[!(currMth$Status %in% c('Missing', 'Maintenance required not functioning')),]
+nTrap1 <- table(cM1$Line, gsub('([[:upper:]]+)([[:digit:]]+)', '\\2', cM1$Tag.No))
+nTrap1 <- apply(nTrap1, 1, function(x) length(x[x!=0]))
+
+catch <- merge(nTrap1, catch, by='row.names', all=TRUE)
 colnames(catch)[2:3] <- c('nTrap','Sprung')
 
 rownames(catch) <- catch$Row.names
@@ -126,13 +131,13 @@ catch[nrow(catch), ncol(catch)] <- round(100*catch[nrow(catch), 'Total']/
   sum(catch[-nrow(catch), 'nTrap'][!is.na(catch[,'Total'])], na.rm=TRUE), 1)
 ```
 
-Table \ref{currMthN} (below) summarises the number of mammals caught in the most recent monthly interval for each line.  The first column is the number of trap boxes^[In some cases trap boxes may be missing or not found at checking, but this is disregarded in this summary], followed by the number of traps which were sprung but empty.  The remaining columns (in blue) give the catch of rats, stoats, weasels, other mammals (e.g., cats, ferrets, rabbits) and the total mammals.  
+Table \ref{currMthN} (below) summarises the number of mammals caught in the most recent monthly interval for each line.  The first column is the number of trap boxes^[In some cases trap boxes may be missing or not functioning, and these have been omitted.  Hence the numbers here may not correspond to totals elsewhere], followed by the number of traps which were sprung but empty.  The remaining columns (in blue) give the catch of rats, stoats, weasels, other mammals (e.g., cats, ferrets, rabbits) and the total mammals.  
 
 ```{r currMthN}
 # kable(catch[, 1:(length(stdStat)+3)]) %>%
 #   kable_styling(full_width=FALSE) %>%
 kable(catch[, 1:(length(stdStat)+3)], 'latex', booktabs=TRUE,
-      caption="\\label{currMthN}Current month's catch for each line.") %>%
+      caption="\\label{currMthN}Current month's catch for each line. Note: nTrap is the number of functioning traps (i.e., missing and non-functioning traps have been omitted)") %>%
   kable_styling(latex_options="hold_position") %>%
   column_spec(length(stdStat)+4, bold=TRUE, color='blue') %>%
   column_spec(2, color='gray') %>%
@@ -142,7 +147,7 @@ kable(catch[, 1:(length(stdStat)+3)], 'latex', booktabs=TRUE,
 
 \pagebreak
 
-The next table (Table \ref{currMthPC}) is similar, except that the numbers are expressed as percentages of the total number of trap boxess on the line.
+The next table (Table \ref{currMthPC}) is similar, except that the numbers are expressed as percentages of the total number of trap boxes^[Omitting missing and not functioning] on the line.
 
 ```{r currMthPC}
 # kable(catch[, c(1, ((length(stdStat)+4):ncol(catch)))]) %>%
@@ -275,7 +280,7 @@ catchPY <- cbind(catchPY, round(apply(catchPY[,-1], 2,
 
 Figure \ref{mthCatchPFig} shows the catch per month summed over all lines for all mammals (total), rats, mustelids (stoats and weasels) and other mammals (including ferrets).  The figure includes the previous year's results for comparison.
 
-```{r, mthCatchPFig, fig.height=4, fig.cap="\\label{mthCatchPFig}Trap catches summed over all lines for each monthly interval. Previous year represented by dashed lines with the same colour coding.  Note: 'mustelid' includes only stoats and weasels (ferrets are included in 'other')."}
+```{r, mthCatchPFig, fig.height=4, fig.cap="\\label{mthCatchPFig}Trap catches summed over all lines for each monthly interval ('Sprung' means the trap was tripped but empty). Previous year represented by dashed lines with the same colour coding.  Note: 'mustelid' includes only stoats and weasels (ferrets, if present, are included in 'other')."}
 par(mar=c(3,3,0.5,2), las=1, mgp=c(2.2, 0.8, 0), xpd=TRUE)
 tt <- catch[catch[,'Total']!=0,]
 ttPY <- catchPY
@@ -288,17 +293,20 @@ axis(2, yLim, c('',''), tck=0)
 lines(1:nrow(tt), tt[,'Rat'], col='gray40')
 lines(1:nrow(tt), tt[,'Stoat']+tt[,'Weasel'], col='brown')
 lines(1:nrow(tt), tt[,'Other'], col='orange')
+lines(1:nrow(tt), tt[,'Sprung'], col='green')
 
 # Previous year
 lines(1:nrow(ttPY), ttPY[,'Total'], lty='dashed')
 lines(1:nrow(ttPY), ttPY[,'Rat'], col='gray40', lty='dashed')
 lines(1:nrow(ttPY), ttPY[,'Stoat']+ttPY[,'Weasel'], col='brown', lty='dashed')
 lines(1:nrow(ttPY), ttPY[,'Other'], col='orange', lty='dashed')
+lines(1:nrow(ttPY), ttPY[,'Sprung'], col='green', lty='dashed')
 
-text(rep(nrow(tt)+0.1, 4), c(tt[nrow(tt),c('Total','Rat')]+c(2,-2),
-                             tt[nrow(tt),'Stoat']+tt[nrow(tt),'Weasel']+2, tt[nrow(tt),'Other']-2),
-     c('Total','Rat','Mustelid','Other'), adj=0, xpd=TRUE, cex=0.8,
-     col=c('black','gray40','brown','orange'))
+text(rep(nrow(tt)+0.1, 5), c(tt[nrow(tt),c('Total','Rat')]+c(2,-2),
+                             tt[nrow(tt),'Stoat']+tt[nrow(tt),'Weasel']+2, tt[nrow(tt),'Other']-2,
+                             tt[nrow(tt),'Sprung']),
+     c('Total','Rat','Mustelid','Other','Sprung'), adj=0, xpd=TRUE, cex=0.8,
+     col=c('black','gray40','brown','orange','green'))
 ```
 
 \pagebreak
