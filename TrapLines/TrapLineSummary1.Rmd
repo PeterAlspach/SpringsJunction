@@ -27,6 +27,13 @@ library(kableExtra)
 # Set the working directory and read the data
 setwd('~/GitHub/SpringsJunction/TrapLines')
 tl <- read.csv('TrapCatches.csv', header=TRUE, sep=',', stringsAsFactors=FALSE)
+# Omit the following two lines if the first report for the year 
+tlXtra <- read.csv('TrapCatchesRecent.csv', header=TRUE, sep=',', stringsAsFactors=FALSE)
+tl <- rbind(tl, tlXtra)
+tl <- tl[tl$Line!='Possum A12',]
+
+# Omit following line unless final report for the month
+# write.csv(tl, 'TrapCatches.csv', row.names=FALSE) 
 
 # Rename traps with only a single digit 'd' to '0d'
 relNo <- tl[grep('[[:upper:]][[:digit:]]{1}$', tl$Tag.No), 'Tag.No']
