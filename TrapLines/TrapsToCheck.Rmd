@@ -20,12 +20,12 @@ output:
 knitr::opts_chunk$set(echo=FALSE, cache=FALSE, error=TRUE)
 library(knitr)
 library(kableExtra)
+# Set the working directory and read the data
+setwd('~/GitHub/SpringsJunction/TrapLines')
 ```
 ## Introduction
 
 ```{r readData}
-# Set the working directory and read the data
-setwd('~/GitHub/SpringsJunction/TrapLines')
 tl <- read.csv('TrapCatches.csv', header=TRUE, sep=',', stringsAsFactors=FALSE)
 tl18 <- read.csv('TrapCatches2018.csv', header=TRUE, sep=',', stringsAsFactors=FALSE)
 

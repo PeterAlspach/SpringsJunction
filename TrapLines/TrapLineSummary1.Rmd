@@ -20,33 +20,17 @@ output:
 knitr::opts_chunk$set(echo=FALSE, cache=FALSE, error=TRUE)
 library(knitr)
 library(kableExtra)
+library(TraplineTools)
+
+setwd('~/GitHub/SpringsJunction/TrapLines') # set appropriate working directory
 ```
 ## Introduction
 
 ```{r readData}
 # Set the working directory and read the data
-setwd('~/GitHub/SpringsJunction/TrapLines')
-tl <- read.csv('TrapCatches.csv', header=TRUE, sep=',', stringsAsFactors=FALSE)
-# Omit the following two lines if the first report for the year 
-tlXtra <- read.csv('TrapCatchesRecent.csv', header=TRUE, sep=',', stringsAsFactors=FALSE)
-tl <- rbind(tl, tlXtra)
-tl <- tl[tl$Line!='Possum A12',]
-
-# Omit following line unless final report for the month
-# write.csv(tl, 'TrapCatches.csv', row.names=FALSE) 
-
-# Rename traps with only a single digit 'd' to '0d'
-relNo <- tl[grep('[[:upper:]][[:digit:]]{1}$', tl$Tag.No), 'Tag.No']
-relNo <- paste0(substring(relNo, 1, nchar(relNo)-1), '0', substring(relNo, nchar(relNo)))
-tl[grep('[[:upper:]][[:digit:]]{1}$', tl$Tag.No), 'Tag.No'] <- relNo
-
-# Remove time from date stamp
-tl$Date.Checked <- substring(tl$Date.Checked, 1, 10)
-yr <- as.integer(substring(tl[substring(tl$Date.Checked, 4)>='01-16', 'Date.Checked'][1], 1, 4))
-tl$jDay <- julian.Date(as.Date(tl$Date.Checked), origin=as.Date(paste0(yr-1, '-12-31')))
-tlOld <- tl[tl$jDay <= 15,]
-tl <- tl[tl$jDay > 15,]
-
+tl <- getTrapData(dstOffset=TRUE)
+yr <- tl$yr
+tl <- tl$tl
 # # Line name and code
 # ttTab <- table(tl$Line, gsub('([[:upper:]]+)([[:digit:]]+)', '\\1', tl$Tag.No))
 # apply(ttTab, 1, function(x) dimnames(ttTab)[[2]][x!=0])
@@ -64,20 +48,15 @@ obsMth <- cut(tl$jDay, c(cutDays, 365+15+floor((4.001-yr%%4)/4)), labels=mthInt)
 # Set the standard trap status of interest
 stdStat <- c('Sprung and Empty','Rat','Stoat','Weasel') # standard trap status
 allMammals <- c('Rat','Stoat','Weasel','Cat','Ferret','Mouse','Rabbit','Hedgehog','Hare','Possum')
+
+# Next compute the number of traps per line (irrespective of whether some are missing)
+nTrap <- table(tl$Line, gsub('([[:upper:]]+)([[:digit:]]+)', '\\2', tl$Tag.No))
+nTrap <- apply(nTrap, 1, function(x) length(x[x!=0]))
 ```
 
 ```{r readDataPY}
 # Read the data for the previous year
-tlPY <- read.csv(paste0('TrapCatches', yr-1, '.csv'), header=TRUE, sep=',', stringsAsFactors=FALSE)
-
-# Rename traps with only a single digit 'd' to '0d'
-relNoPY <- tlPY[grep('[[:upper:]][[:digit:]]{1}$', tlPY$Tag.No), 'Tag.No']
-relNoPY <- paste0(substring(relNoPY, 1, nchar(relNoPY)-1), '0', substring(relNoPY, nchar(relNoPY)))
-tlPY[grep('[[:upper:]][[:digit:]]{1}$', tlPY$Tag.No), 'Tag.No'] <- relNoPY
-
-# Remove time from date stamp
-tlPY$Date.Checked <- substring(tlPY$Date.Checked, 1, 10)
-tlPY$jDay <- julian.Date(as.Date(tlPY$Date.Checked), origin=as.Date(paste0(yr-2, '-12-31')))
+tlPY <- getTrapData(paste0('TrapCatches', yr-1, '.csv'), dstOffset=TRUE)$tl
 
 obsMthPY <- cut(tlPY$jDay, c(cutDays, 365+15+floor((4.001-(yr-1)%%4)/4)), labels=mthInt)
 ```
@@ -89,53 +68,7 @@ The summary is for the most recent monthly interval (`r paste(month.name[(mth-1)
 ## The most recent monthly interval
 
 ```{r currMth}
-# Subset tl to the data for the current month only
-if (mth==1) mth <- 13
-# obsMthOld <- obsMth[as.integer(substring(tl$Date.Checked, 1, 4)) < yr]
-# obsMth <- obsMth[as.integer(substring(tl$Date.Checked, 1, 4)) == yr]
-# tlOld <- tl[as.integer(substring(tl$Date.Checked, 1, 4)) < yr,]
-# tl <- tl[as.integer(substring(tl$Date.Checked, 1, 4)) == yr,]
-currMth <- tl[obsMth==levels(obsMth)[mth-1],]
-
-# First tabulate the number of pests caught
-trap1 <- table(currMth$Line, currMth$Trap.1)
-trap2 <- table(currMth$Line, currMth$Trap.2)
-# trap2 <- trap2[, colnames(trap2)!='N/A']
-tt <- unique(c(colnames(trap1), colnames(trap2)))
-tt <- tt[tt!='N/A']
-
-trap1 <- cbind(trap1, matrix(0, nrow(trap1), sum(!(tt %in% colnames(trap1))),
-                             dimnames=list(dimnames(trap1)[[1]], tt[!(tt %in% colnames(trap1))])))
-trap2 <- cbind(trap2, matrix(0, nrow(trap2), sum(!(tt %in% colnames(trap2))),
-                             dimnames=list(dimnames(trap2)[[1]], tt[!(tt %in% colnames(trap2))])))
-trap2 <- trap2[, colnames(trap2)!='N/A']
-catch <- trap1[, tt] + trap2[, tt]
-# catch <- catch[, match(c(stdStat, 'Cat','Ferret','Mouse','Rabbit'), colnames(catch))]
-catch <- catch[, match(unique(c(stdStat, allMammals)), colnames(catch))]
-catch <- cbind(catch[, 1:length(stdStat)],
-               Other=apply(catch[, -(1:length(stdStat))], 1, sum, na.rm=TRUE))
-catch <- cbind(catch, Total=apply(catch[, -1], 1, sum, na.rm=TRUE))
-
-# Next add in the number of traps per line (irrespective of whether some are missing)
-nTrap <- table(tl$Line, gsub('([[:upper:]]+)([[:digit:]]+)', '\\2', tl$Tag.No))
-nTrap <- apply(nTrap, 1, function(x) length(x[x!=0]))
-
-cM1 <- currMth[!(currMth$Status %in% c('Missing', 'Maintenance required not functioning')),]
-nTrap1 <- table(cM1$Line, gsub('([[:upper:]]+)([[:digit:]]+)', '\\2', cM1$Tag.No))
-nTrap1 <- apply(nTrap1, 1, function(x) length(x[x!=0]))
-
-catch <- merge(nTrap1, catch, by='row.names', all=TRUE)
-colnames(catch)[2:3] <- c('nTrap','Sprung')
-
-rownames(catch) <- catch$Row.names
-catch <- catch[,-1]
-catch <- rbind(catch, apply(catch, 2, sum, na.rm=TRUE))
-rownames(catch)[nrow(catch)] <- 'TOTAL'
-
-# Add proportions based on total number of traps per line (including missing traps)
-catch <- cbind(catch, round(apply(catch[,-1], 2, function(x) 100*x/catch[,1]), 1))
-catch[nrow(catch), ncol(catch)] <- round(100*catch[nrow(catch), 'Total']/
-  sum(catch[-nrow(catch), 'nTrap'][!is.na(catch[,'Total'])], na.rm=TRUE), 1)
+catch <- consolidateTrapData(currMth=mth)
 ```
 
 Table \ref{currMthN} (below) summarises the number of mammals caught in the most recent monthly interval for each line.  The first column is the number of trap boxes^[In some cases trap boxes may be missing or not functioning, and these have been omitted.  Hence the numbers here may not correspond to totals elsewhere], followed by the number of traps which were sprung but empty.  The remaining columns (in blue) give the catch of rats, stoats, weasels, other mammals (e.g., cats, ferrets, rabbits) and the total mammals.  
@@ -144,7 +77,7 @@ Table \ref{currMthN} (below) summarises the number of mammals caught in the most
 # kable(catch[, 1:(length(stdStat)+3)]) %>%
 #   kable_styling(full_width=FALSE) %>%
 kable(catch[, 1:(length(stdStat)+3)], 'latex', booktabs=TRUE,
-      caption="\\label{currMthN}Current month's catch for each line. Note: nTrap is the number of functioning traps (i.e., missing and non-functioning traps have been omitted)") %>%
+      caption="\\label{currMthN}Current month's catch for each line. Note: nTrap is the number of functioning traps (i.e., missing and non-functioning traps have been omitted).") %>%
   kable_styling(latex_options="hold_position") %>%
   column_spec(length(stdStat)+4, bold=TRUE, color='blue') %>%
   column_spec(2, color='gray') %>%
@@ -173,33 +106,7 @@ kable(catch[, c(1, ((length(stdStat)+4):ncol(catch)))], 'latex', booktabs=TRUE,
 ### Mammals caught by line
 
 ```{r yrToDate}
-# First tabulate the number of pests caught
-trap1 <- table(tl$Line, tl$Trap.1)
-trap2 <- table(tl$Line, tl$Trap.2)
-trap2 <- trap2[, colnames(trap2)!='N/A']
-tt <- unique(c(colnames(trap1), colnames(trap2)))
-
-trap1 <- cbind(trap1, matrix(0, nrow(trap1), sum(!(tt %in% colnames(trap1))),
-                             dimnames=list(dimnames(trap1)[[1]], tt[!(tt %in% colnames(trap1))])))
-trap2 <- cbind(trap2, matrix(0, nrow(trap2), sum(!(tt %in% colnames(trap2))),
-                             dimnames=list(dimnames(trap2)[[1]], tt[!(tt %in% colnames(trap2))])))
-catch <- trap1[, tt] + trap2[, tt]
-catch <- catch[, match(unique(c(stdStat, allMammals)), colnames(catch))]
-catch <- cbind(catch[, 1:length(stdStat)],
-               Other=apply(catch[, -(1:length(stdStat))], 1, sum, na.rm=TRUE))
-catch <- cbind(catch, Total=apply(catch[, -1], 1, sum, na.rm=TRUE))
-
-# Next add in the number of traps per line (irrespective of whether some are missing)
-catch <- merge(nTrap, catch, by='row.names', all=TRUE) # nTrap previously calculated
-colnames(catch)[2:3] <- c('nTrap','Sprung')
-
-rownames(catch) <- catch$Row.names
-catch <- catch[,-1]
-catch <- rbind(catch, apply(catch, 2, sum, na.rm=TRUE))
-rownames(catch)[nrow(catch)] <- 'TOTAL'
-
-# Add numbers caught per trap per month (x 100)
-catch <- cbind(catch, round(apply(catch[,-1], 2, function(x) 100*x/(catch[,1]*(mth-1))), 1))
+catch <- consolidateTrapData()
 ```
 
 Table \ref{yrToDateN} (below) summarises the number of mammals caught in the year to date for each line.  The first column is the number of trap boxes, followed by the number of traps which were sprung but empty.  The remaining columns (in blue) give the catch of rats, stoats, weasels, other mammals (e.g., cats, ferrets, rabbits) and the total mammals.  
@@ -441,7 +348,7 @@ mSppFn <- function(sppTab, spp, sppPlural, zero=TRUE)
 }
 
 miscSppY <- table(unlist(tl[, c('Trap.1','Trap.2')]))
-miscSppM <- table(unlist(currMth[, c('Trap.1','Trap.2')]))
+miscSppM <- table(unlist(tl[obsMth==levels(obsMth)[mth-1], c('Trap.1','Trap.2')]))
 ```
 
 ### Other mammals
