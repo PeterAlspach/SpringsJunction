@@ -14,7 +14,7 @@ output:
 ---
 
 <!-- To do: -->
-<!-- Mammals are defined at the end of the 'getReady' chunk (about line 58) -->
+<!-- Mammals are defined at the end of the 'getReady' chunk (about line 47) -->
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo=FALSE, cache=FALSE, error=TRUE)
@@ -40,10 +40,10 @@ tl <- tl$tl
 # Set the cut-off dates for the monthly intervals
 lastDate <- sort(tl$Date.Checked, decreasing=TRUE)[1]
 mth <- as.integer(substring(lastDate, 6, 7))
-cutDays <- paste(yr, c(paste0('0', 1:9), 10:12), '15', sep='-') # cut at the middle of the month 
-cutDays <- julian.Date(as.Date(cutDays), origin=as.Date(paste0(yr-1, '-12-31')))
-mthInt <- c('J-F', 'F-M', 'M-A','A-M', 'M-J', 'J-J','J-A', 'A-S', 'S-O', 'O-N', 'N-D', 'D-J')
-obsMth <- cut(tl$jDay, c(cutDays, 365+15+floor((4.001-yr%%4)/4)), labels=mthInt)
+beginAt <- 16
+obsMth <- setCutDates(beginAt, yr, tl$jDay)
+# cutDays <- obsMth$cutDays
+# obsMth <- obsMth$obsMth
 
 # Set the standard trap status of interest
 stdStat <- c('Sprung and Empty','Rat','Stoat','Weasel') # standard trap status
@@ -58,12 +58,12 @@ nTrap <- apply(nTrap, 1, function(x) length(x[x!=0]))
 # Read the data for the previous year
 tlPY <- getTrapData(paste0('TrapCatches', yr-1, '.csv'), dstOffset=TRUE)$tl
 
-obsMthPY <- cut(tlPY$jDay, c(cutDays, 365+15+floor((4.001-(yr-1)%%4)/4)), labels=mthInt)
+obsMthPY <- setCutDates(beginAt, yr-1, tlPY$jDay)
 ```
 
-The following tables give a summary of the catches from the `r length(unique(tl$Tag.No))` trap boxes^[On some lines (Maruia River, Kellys, and parts of Fergusons Flat) each box contains two traps.  Thus, on these lines it is possible to catch two mammals per trap box.] on the `r length(unique(tl$Line))` trap-lines at Maruia.  The intention is to check the traps monthly around the change of the month, hence monthly summaries are aggregated from the 16^th^ of one month to the 15^th^ of the next (and labelled with the first letter of the two months)
+The following tables give a summary of the catches from the `r length(unique(tl$Tag.No))` trap boxes^[On some lines (Maruia River, Kellys, and parts of both the Lewis Pass Highway and Fergusons Flat) each box contains two traps.  Thus, on these lines it is possible to catch two mammals per trap box.] on the `r length(unique(tl$Line))` trap-lines at Maruia.  The intention is to check the traps monthly around the change of the month, hence monthly summaries are aggregated from the `r beginAt`^th^ of of the month (inclusive).
 
-The summary is for the most recent monthly interval (`r paste(month.name[(mth-1):mth], collapse='-')`) in `r yr` and also the entire year-to-date.
+The summary is for the most recent monthly interval (i.e., that beginning on `r unique(obsMth[tl$jDay==max(tl$jDay)])`) in `r yr` and also the entire year-to-date.
 
 ## The most recent monthly interval
 
@@ -112,8 +112,6 @@ catch <- consolidateTrapData()
 Table \ref{yrToDateN} (below) summarises the number of mammals caught in the year to date for each line.  The first column is the number of trap boxes, followed by the number of traps which were sprung but empty.  The remaining columns (in blue) give the catch of rats, stoats, weasels, other mammals (e.g., cats, ferrets, rabbits) and the total mammals.  
 
 ```{r yrToDateN, echo=FALSE}
-# kable(catch[, 1:(length(stdStat)+3)]) %>%
-#   kable_styling(full_width=FALSE) %>%
 kable(catch[, 1:(length(stdStat)+3)], 'latex', booktabs=TRUE,
       caption='\\label{yrToDateN}Total year-to-date catch for each line.') %>%
   kable_styling(latex_options="hold_position") %>%
@@ -128,8 +126,6 @@ kable(catch[, 1:(length(stdStat)+3)], 'latex', booktabs=TRUE,
 Next, the data are presented as numbers caught per trap box per month ($\times$ 100) for each line (Table \ref{yrToDatePC}).  This is analogous to the second table in the current month section which gave the percentages.
 
 ```{r yrToDatePC}
-# kable(catch[, c(1, ((length(stdStat)+4):ncol(catch)))]) %>%
-  # kable_styling(full_width=FALSE) %>%
 kable(catch[, c(1, ((length(stdStat)+4):ncol(catch)))], 'latex', booktabs=TRUE,
       caption='\\label{yrToDatePC}Year-to-date catch per trap box per month ($\\times$ 100) for each line.') %>%
   kable_styling(latex_options="hold_position") %>%
@@ -200,7 +196,7 @@ tt <- catch[catch[,'Total']!=0,]
 ttPY <- catchPY
 ttPY[ttPY[,'Total']==0,] <- NA
 yLim <- c(0, max(c(tt[,'Total'], ttPY[,'Total']), na.rm=TRUE))
-plot(1:nrow(tt), tt[,'Total'], xlab='Month interval', ylab='Numbers caught',
+plot(1:nrow(tt), tt[,'Total'], xlab='Month beginning', ylab='Numbers caught',
      xlim=c(1,12), ylim=yLim, xaxt='n', type='l', bty='n')
 axis(1, 1:nrow(ttPY), row.names(ttPY))
 axis(2, yLim, c('',''), tck=0)            
@@ -295,7 +291,7 @@ ttPY <- catchPY[, colnames(catchPY) %in% c('Lewis Pass H/Way','Lockingtons','Mar
                                      'Maruia River','Kellys','Campground')]
 lCol <- c('gold','darkgreen','grey40','turquoise','lightgreen','pink3')
 yLim <- c(0, max(c(tt, ttPY), na.rm=TRUE))
-plot(1:nrow(tt), tt[,1], xlab='Month interval', ylab='Catch per trap (x100)',
+plot(1:nrow(tt), tt[,1], xlab='Month beginning', ylab='Catch per trap (x100)',
      xlim=c(1,12), ylim=yLim, xaxt='n', type='l', bty='n')
 axis(1, 1:12, mthInt)
 axis(2, yLim, c('',''), tck=0)
@@ -316,7 +312,7 @@ ttPY <- catchPY[, !(colnames(catchPY) %in% c('Lewis Pass H/Way','Lockingtons','M
                                        'Maruia River','Kellys','Campground'))]
 lCol <- c('darkred','pink3','grey40','blue','red','green')
 yLim <- c(0, max(c(tt, ttPY), na.rm=TRUE))
-plot(1:nrow(tt), tt[,1], xlab='Month interval', ylab='Catch per trap (x100)',
+plot(1:nrow(tt), tt[,1], xlab='Month beginning', ylab='Catch per trap (x100)',
      xlim=c(1,12), ylim=yLim, xaxt='n', type='l', bty='n')
 axis(1, 1:12, mthInt)
 axis(2, yLim, c('',''), tck=0)
@@ -335,18 +331,6 @@ for(i in 1:ncol(tt))
 ## Miscellaneous species
 
 ```{r, miscSpp}
-mSppFn <- function(sppTab, spp, sppPlural, zero=TRUE)
-{
-  if (spp %in% names(sppTab))
-  {
-    if (sppTab[names(sppTab)==spp]==1) paste(1, tolower(spp)) else
-        paste(sppTab[names(sppTab)==spp], sppPlural)
-  } else
-  {
-    if (zero) paste(0, sppPlural) else NULL
-  }
-}
-
 miscSppY <- table(unlist(tl[, c('Trap.1','Trap.2')]))
 miscSppM <- table(unlist(tl[obsMth==levels(obsMth)[mth-1], c('Trap.1','Trap.2')]))
 ```
@@ -366,14 +350,14 @@ Of these, `r if ('Cat' %in% names (miscSppM)) paste0(mSppFn(miscSppM, 'Cat', 'ca
 Finally, in the year to date, the following non-target species have been caught: 
 `r mSppFn(miscSppY, 'Harrier', 'harrier')`,
 `r mSppFn(miscSppY, 'Robin', 'robins')`, 
-`r mSppFn(miscSppY, 'Weka', 'weka')`. and
+`r mSppFn(miscSppY, 'Weka', 'weka')`, and
 `r mSppFn(miscSppY, 'Weka Juvenile', 'weka juveniles')`.
 
 ```{r OtherSeeComment}
 osc <- tl[tl$Trap.1=='Other see comment' | tl$Trap.2=='Other see comment',]
 osc <- osc[osc$Record.Comment!='' & osc$Status=='Open',]
 ```
-Other non-target species caught in the year to date are `r osc$Record.Comment`.
+`r if(nrow(osc)>0) paste('Other non-target species caught in the year to date are', osc$Record.Comment)`.
 \color{black!50}
 
 ### Check
