@@ -68,18 +68,20 @@ The summary is for the most recent monthly interval (i.e., that beginning on `r 
 ## The most recent monthly interval
 
 ```{r consolidateAll}
+# Set up arrays to hold the summaries
 catchAllPY <- catchAll <- array(dim=c(length(unique(tl$Line))+1, 1+2*(length(stdStat)+2), 12),
                                 dimnames=list(c(unique(tl$Line), 'TOTAL'),
                                               c('nTrap', rep(c(substring(stdStat, 1, 6), 'Other', 'Total'), 2)),
                                               levels(obsMth)))
+# Current year
 for (i in 1:mth) catchAll[,,i] <- as.matrix(consolidateTrapData(currMth=i)[, 1:dim(catchAll)[2]])
 
-# Ditto for the previous year
+# Previous year
 for (i in 1:12) catchAllPY[,,i] <- as.matrix(consolidateTrapData(tlPY, mthInt=obsMthPY, currMth=i)[, 1:dim(catchAll)[2]])
 ```
 
 ```{r currMth}
-catch <- catchAll[, , mth] # may be necesary to convert this to a data.frame
+catch <- catchAll[, , mth]
 ```
 
 Table \ref{currMthN} (below) summarises the number of mammals caught in the most recent monthly interval for each line.  The first column is the number of trap boxes^[In some cases trap boxes may be missing or not functioning, and these have been omitted.  Hence the numbers here may not correspond to totals elsewhere], followed by the number of traps which were sprung but empty.  The remaining columns (in blue) give the catch of rats, stoats, weasels, other mammals (e.g., cats, mice, rabbits) and the total mammals.  
@@ -151,7 +153,10 @@ kable(catch[, c(1, ((length(stdStat)+4):ncol(catch)))], 'latex', booktabs=TRUE,
 ### Mammals caught by month
 
 ```{r mthCatchP}
+# Current year
 catch <- t(catchAll['TOTAL',,])
+
+# Previous year
 catchPY <- t(catchAllPY['TOTAL',,])
 ```
 
@@ -191,61 +196,13 @@ text(rep(nrow(tt)+0.1, 5), c(tt[nrow(tt),c('Total','Rat')]+c(2,-2),
 ### Catch by month for each line
 
 ```{r mthCatchL}
-# First tabulate the number of pests caught
-trap1 <- table(obsMth, tl$Line, tl$Trap.1)
-# trap1 <- apply(trap1[,, c('Rat','Stoat','Weasel','Cat','Ferret','Mouse','Rabbit')], 1:2, sum)
-trap2 <- table(obsMth, tl$Line, tl$Trap.2)
-# trap2 <- apply(trap2[,, c('Rat','Stoat','Weasel','Cat','Ferret','Mouse','Rabbit')], 1:2, sum)
-trap2 <- trap2[, , dimnames(trap2)[[3]]!='N/A']
-tt <- unique(c(dimnames(trap1)[[3]], dimnames(trap2)[[3]]))
-# Append to trap1 if necessary
-appd <- array(0, replace(dim(trap1), 3, length(tt)-dim(trap1)[3]),
-              dimnames=list(dimnames(trap1)[[1]], dimnames(trap1)[[2]],
-                            tt[!(tt %in% dimnames(trap1)[[3]])]))
-trap1 <- abind::abind(trap1, appd, along=3)
-# Append to trap2
-appd <- array(0, replace(dim(trap2), 3, length(tt)-dim(trap2)[3]),
-              dimnames=list(dimnames(trap2)[[1]], dimnames(trap2)[[2]],
-                            tt[!(tt %in% dimnames(trap2)[[3]])]))
-trap2 <- abind::abind(trap2, appd, along=3)
-# Only interested in mammalian catch
-mammals <- allMammals[allMammals %in% dimnames(trap1)[[3]]]
-trap1 <- apply(trap1[,, mammals], 1:2, sum)
-trap2 <- apply(trap2[,, mammals], 1:2, sum)
-
-catch <- trap1 + trap2
-catch[table(obsMth, tl$Line)==0] <- NA # put missing value in where line not checked
-catch <- catch[apply(catch, 1, function(x) length(x[!is.na(x)]))!=0,] # remove unchecked months
-catch <- 100*catch/matrix(nTrap, nrow(catch), ncol(catch), byrow=TRUE) # per trap
+# Current year
+catch <- t(catchAll[,dim(catchAll)[2],])[1:mth,]
+catch <- catch[, -ncol(catch)] # remove TOTAL column
 
 # Previous year
-trap1PY <- table(obsMthPY, tlPY$Line, tlPY$Trap.1)
-trap2PY <- table(obsMthPY, tlPY$Line, tlPY$Trap.2)
-
-trap2PY <- trap2PY[, , dimnames(trap2PY)[[3]]!='N/A']
-tt <- unique(c(dimnames(trap1PY)[[3]], dimnames(trap2PY)[[3]]))
-
-appd <- array(0, replace(dim(trap1PY), 3, length(tt)-dim(trap1PY)[3]),
-              dimnames=list(dimnames(trap1PY)[[1]], dimnames(trap1PY)[[2]],
-                            tt[!(tt %in% dimnames(trap1PY)[[3]])]))
-trap1PY <- abind::abind(trap1PY, appd, along=3)
-
-appd <- array(0, replace(dim(trap2PY), 3, length(tt)-dim(trap2PY)[3]),
-              dimnames=list(dimnames(trap2PY)[[1]], dimnames(trap2PY)[[2]],
-                            tt[!(tt %in% dimnames(trap2PY)[[3]])]))
-trap2PY <- abind::abind(trap2PY, appd, along=3)
-
-mammals <- allMammals[allMammals %in% dimnames(trap1PY)[[3]]]
-trap1PY <- apply(trap1PY[,, mammals], 1:2, sum)
-trap2PY <- apply(trap2PY[,, mammals], 1:2, sum)
-
-catchPY <- trap1PY + trap2PY
-catchPY[table(obsMthPY, tlPY$Line)==0] <- NA # put missing value in where line not checked
-catchPY <- catchPY[apply(catchPY, 1, function(x) length(x[!is.na(x)]))!=0,] # remove unchecked months
-catchPY <- 100*catchPY/matrix(nTrap, nrow(catchPY), ncol(catchPY), byrow=TRUE) # per trap
-catchPY <- merge(as.data.frame(mthInt), catchPY, by.x='mthInt', by.y='row.names', all.x=TRUE)
-rownames(catchPY) <- catchPY[,1]
-catchPY <- as.matrix(catchPY[mthInt, -1])
+catchPY <- t(catchAllPY[,dim(catchAll)[2],])
+catchPY <- catchPY[, -ncol(catchPY)] # remove TOTAL column
 ```
 
 Figure \ref{mthCatchLFig} shows the monthly catch per trap box ($\times$ 100) of all mammals for half of the lines on the top and for the other half on the bottom.  The colours have been chosen to roughly match those on the map supplied by DoC, and the line names have been abbreviated.  The previous year's results are also shown for comparison (although it is not always easy to distinguish the colours).
@@ -260,7 +217,7 @@ lCol <- c('gold','darkgreen','grey40','turquoise','lightgreen','pink3')
 yLim <- c(0, max(c(tt, ttPY), na.rm=TRUE))
 plot(1:nrow(tt), tt[,1], xlab='Month beginning', ylab='Catch per trap (x100)',
      xlim=c(1,12), ylim=yLim, xaxt='n', type='l', bty='n')
-axis(1, 1:12, mthInt)
+axis(1, 1:12, levels(obsMth))
 axis(2, yLim, c('',''), tck=0)
 
 for(i in 1:ncol(tt))
@@ -281,7 +238,7 @@ lCol <- c('darkred','pink3','grey40','blue','red','green')
 yLim <- c(0, max(c(tt, ttPY), na.rm=TRUE))
 plot(1:nrow(tt), tt[,1], xlab='Month beginning', ylab='Catch per trap (x100)',
      xlim=c(1,12), ylim=yLim, xaxt='n', type='l', bty='n')
-axis(1, 1:12, mthInt)
+axis(1, 1:12, levels(obsMth))
 axis(2, yLim, c('',''), tck=0)
 
 for(i in 1:ncol(tt))
