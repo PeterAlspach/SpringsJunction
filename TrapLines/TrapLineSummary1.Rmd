@@ -300,53 +300,11 @@ kable(chkTab, 'latex', booktabs=TRUE) %>%
 It may be of interest to know which traps are catching the most mammals.  This is shown in the following 'maps'^[No attempt has been made to ensure that the aspect ratio of the maps is correct.  This will be addressed in future.] (Figures \ref{mthTrapCatch1}, \ref{mthTrapCatch2} and \ref{mthTrapCatch3}).  These are a little complicated.  Each map shows a collection of lines, and the location of the traps on these lines.  The symbols indicate the cumulative catch over the previous twelve months such that the diameter of the cycle is proportional to the number of mammals caught, and the colour of the ring indicates the number of months prior to the current.  Thus, the lack of yellow-shaded rings for the Campground (Figure \ref{mthTrapCatch2} or \ref{mthTrapCatch3}) shows that no mammals were caught on this line 9-12 months ago, although more recently these traps have caught a good number of mammals.  Also, one can see traps 4, 9 and 10 have not caught anything during the last year, which is because these traps are missing.
 
 ```{r mthCatchT}
-# Get monthly catch summary for each trap
-# First tabulate the number of pests caught
-trap1 <- table(obsMth, tl$Tag.No, tl$Trap.1)
-# trap1 <- apply(trap1[,, c('Rat','Stoat','Weasel','Cat','Ferret','Mouse','Rabbit')], 1:2, sum)
-trap2 <- table(obsMth, tl$Tag.No, tl$Trap.2)
-# trap2 <- apply(trap2[,, c('Rat','Stoat','Weasel','Cat','Ferret','Mouse','Rabbit')], 1:2, sum)
-trap2 <- trap2[, , dimnames(trap2)[[3]]!='N/A']
-tt <- unique(c(dimnames(trap1)[[3]], dimnames(trap2)[[3]]))
-# Append to trap1 if necessary
-appd <- array(0, replace(dim(trap1), 3, length(tt)-dim(trap1)[3]),
-              dimnames=list(dimnames(trap1)[[1]], dimnames(trap1)[[2]],
-                            tt[!(tt %in% dimnames(trap1)[[3]])]))
-trap1 <- abind::abind(trap1, appd, along=3)
-# Append to trap2
-appd <- array(0, replace(dim(trap2), 3, length(tt)-dim(trap2)[3]),
-              dimnames=list(dimnames(trap2)[[1]], dimnames(trap2)[[2]],
-                            tt[!(tt %in% dimnames(trap2)[[3]])]))
-trap2 <- abind::abind(trap2, appd, along=3)
-# Only interested in mammalian catch
-mammals <- allMammals[allMammals %in% dimnames(trap1)[[3]]]
-trap1 <- apply(trap1[,, mammals], 1:2, sum)
-trap2 <- apply(trap2[,, mammals], 1:2, sum)
-
-catch <- trap1 + trap2
+# Current year
+catch <- catchPerBox()
 
 # Previous year
-trap1PY <- table(obsMthPY, tlPY$Tag.No, tlPY$Trap.1)
-trap2PY <- table(obsMthPY, tlPY$Tag.No, tlPY$Trap.2)
-
-trap2PY <- trap2PY[, , dimnames(trap2PY)[[3]]!='N/A']
-tt <- unique(c(dimnames(trap1PY)[[3]], dimnames(trap2PY)[[3]]))
-
-appd <- array(0, replace(dim(trap1PY), 3, length(tt)-dim(trap1PY)[3]),
-              dimnames=list(dimnames(trap1PY)[[1]], dimnames(trap1PY)[[2]],
-                            tt[!(tt %in% dimnames(trap1PY)[[3]])]))
-trap1PY <- abind::abind(trap1PY, appd, along=3)
-
-appd <- array(0, replace(dim(trap2PY), 3, length(tt)-dim(trap2PY)[3]),
-              dimnames=list(dimnames(trap2PY)[[1]], dimnames(trap2PY)[[2]],
-                            tt[!(tt %in% dimnames(trap2PY)[[3]])]))
-trap2PY <- abind::abind(trap2PY, appd, along=3)
-
-mammals <- allMammals[allMammals %in% dimnames(trap1PY)[[3]]]
-trap1PY <- apply(trap1PY[,, mammals], 1:2, sum)
-trap2PY <- apply(trap2PY[,, mammals], 1:2, sum)
-
-catchPY <- trap1PY + trap2PY
+catchPY <- catchPerBox(tlPY, obsMthPY)
 
 # Combine catch and catchPY to get 12 months data in order
 catch <- t(catch)
