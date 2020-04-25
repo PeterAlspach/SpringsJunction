@@ -14,7 +14,7 @@ output:
 ---
 
 <!-- To do: -->
-<!-- Mammals are defined at the end of the 'getReady' chunk (about line 47) -->
+<!-- Mammals are defined at the end of the 'getReady' chunk (about line 45) -->
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo=FALSE, cache=FALSE, error=TRUE)
@@ -31,9 +31,6 @@ setwd('~/GitHub/SpringsJunction/TrapLines') # set appropriate working directory
 tl <- getTrapData(dstOffset=TRUE)
 yr <- tl$yr
 tl <- tl$tl
-# # Line name and code
-# ttTab <- table(tl$Line, gsub('([[:upper:]]+)([[:digit:]]+)', '\\1', tl$Tag.No))
-# apply(ttTab, 1, function(x) dimnames(ttTab)[[2]][x!=0])
 ```
 
 ```{r getReady}
@@ -42,8 +39,6 @@ lastDate <- sort(tl$Date.Checked, decreasing=TRUE)[1]
 beginAt <- 16
 obsMth <- setCutDates(beginAt, yr, tl$jDay)
 mth <- max(as.numeric(obsMth))
-# cutDays <- obsMth$cutDays
-# obsMth <- obsMth$obsMth
 
 # Set the standard trap status of interest
 stdStat <- c('Sprung and Empty','Rat','Stoat','Weasel') # standard trap status
@@ -103,8 +98,6 @@ kable(catch[, 1:(length(stdStat)+3)], 'latex', booktabs=TRUE,
 The next table (Table \ref{currMthPC}) is similar, except that the numbers are expressed as percentages of the total number of trap boxes^[Omitting missing and not functioning] on the line.
 
 ```{r currMthPC}
-# kable(catch[, c(1, ((length(stdStat)+4):ncol(catch)))]) %>%
-#   kable_styling(full_width=FALSE) %>%
 kable(catch[, c(1, ((length(stdStat)+4):ncol(catch)))], 'latex', booktabs=TRUE,
       caption="\\label{currMthPC}Current month's catch per trap box ($\\times$ 100) for each line.") %>%
   kable_styling(latex_options="hold_position") %>%
