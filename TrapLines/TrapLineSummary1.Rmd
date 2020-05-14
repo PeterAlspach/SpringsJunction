@@ -27,7 +27,7 @@ setwd('~/GitHub/SpringsJunction/TrapLines') # set appropriate working directory
 ## Introduction
 
 ```{r readData}
-# Set the working directory and read the data
+# Read the data
 tl <- getTrapData(dstOffset=TRUE)
 yr <- tl$yr
 tl <- tl$tl
@@ -155,7 +155,7 @@ catchPY <- t(catchAllPY['TOTAL',,])
 
 Figure \ref{mthCatchPFig} shows the catch per month summed over all lines for all mammals (total), rats, mustelids (stoats and weasels) and other mammals (including ferrets).  The figure includes the previous year's results for comparison.
 
-```{r, mthCatchPFig, fig.height=4, fig.cap="\\label{mthCatchPFig}Trap catches summed over all lines for each monthly interval ('Sprung' means the trap was tripped but empty). Previous year represented by dashed lines with the same colour coding.  Note: 'mustelid' includes only stoats and weasels (ferrets, if present, are included in 'other')."}
+```{r, mthCatchPFig, fig.height=4, fig.cap="\\label{mthCatchPFig}Trap catches summed over all lines for each monthly interval ('Sprung' means the trap was tripped but empty). Previous year represented by dashed lines with the same colour coding.  Note: 'mustelid' includes only stoats and weasels (ferrets, if present, are included in 'other').  Circle diameter, shown for the Total catch only but applicable to all categories, is proportional to the mean number of times the traps were checked during the month"}
 par(mar=c(3,3,0.5,2), las=1, mgp=c(2.2, 0.8, 0), xpd=TRUE)
 tt <- catch[!(catch[,'Total']==0 | is.na(catch[,'Total'])),]
 ttPY <- catchPY
@@ -165,12 +165,14 @@ plot(1:nrow(tt), tt[,'Total'], xlab='Month beginning', ylab='Numbers caught',
      xlim=c(1,12), ylim=yLim, xaxt='n', type='l', bty='n')
 axis(1, 1:nrow(ttPY), row.names(ttPY))
 axis(2, yLim, c('',''), tck=0)            
+points(1:nrow(tt), tt[,'Total'], pch=16, cex=table(obsMth)/(2*length(unique(tl$Tag.No))))
 lines(1:nrow(tt), tt[,'Rat'], col='gray40')
 lines(1:nrow(tt), tt[,'Stoat']+tt[,'Weasel'], col='brown')
 lines(1:nrow(tt), tt[,'Other'], col='orange')
 lines(1:nrow(tt), tt[,'Sprung'], col='green')
 
 # Previous year
+points(1:nrow(ttPY), ttPY[,'Total'], pch=1, cex=table(obsMthPY)/(2*length(unique(tlPY$Tag.No))))
 lines(1:nrow(ttPY), ttPY[,'Total'], lty='dashed')
 lines(1:nrow(ttPY), ttPY[,'Rat'], col='gray40', lty='dashed')
 lines(1:nrow(ttPY), ttPY[,'Stoat']+ttPY[,'Weasel'], col='brown', lty='dashed')
