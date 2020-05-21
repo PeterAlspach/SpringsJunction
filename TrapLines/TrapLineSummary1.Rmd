@@ -36,9 +36,9 @@ tl <- tl$tl
 ```{r getReady}
 # Set the cut-off dates for the monthly intervals
 lastDate <- sort(tl$Date.Checked, decreasing=TRUE)[1]
-beginAt <- 16
+beginAt <- 22 # Good options are 10/11 and 22/23
 obsMth <- setCutDates(beginAt, yr, tl$jDay)
-mth <- max(as.numeric(obsMth))
+mth <- max(as.numeric(obsMth), na.rm=TRUE)
 
 # Set the standard trap status of interest
 stdStat <- c('Sprung and Empty','Rat','Stoat','Weasel') # standard trap status
