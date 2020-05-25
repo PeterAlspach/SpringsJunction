@@ -346,8 +346,9 @@ lineGrps[[2]] <- c('CG','SHY')
 lineGrps[[3]] <- c('AK','CG','EE','FF','MBL','MRB')
 ```
 
-```{r, mthTrapCatch1, fig.height=10, fig.width=8, fig.cap="\\label{mthTrapCatch1}Map of the Lake Daniell lines (i.e., Lake Daniell Track and Terrace, Alfred 4x4, Pell Terrace and Reid Stream).  Each line is colour-coded as indicated.  The point diameters are proportional to the cumulative catch, and the colour indicates when the mammal was caught (months prior to the present).  An open grey circle indicates a trap which has caught nothing in the past 12 months.  Note, the GPS locations of traps 46-48 on Reid Stream are not current, and the GPS trap numbers on Alfred 4x4 are slightly out of synchrony with the actual trap numbers."}
+```{r, mthTrapCatch1, fig.height=10, fig.width=8, fig.cap="\\label{mthTrapCatch1}Map of the Lake Daniell lines (i.e., Lake Daniell Track and Terrace, Alfred 4x4, Pell Terrace and Reid Stream).  Each line is a different colour.  The point diameters are proportional to the cumulative catch, and the colour indicates when the mammal was caught (months prior to the present).  An open grey circle indicates a trap which has caught nothing in the past 12 months.  The topographical map overlay is approximate only.  Note, the GPS locations of traps 46-48 on Reid Stream are not current, and the GPS trap numbers on Alfred 4x4 are slightly out of synchrony with the actual trap numbers."}
 par(mar=rep(0, 4))
+myMap <- readJPEG('MapFigure3.jpg')
 ttCols <- viridisLite::inferno(ncol(catch12m)-3)
 
 # for (lns in 1:length(lineGrps))
@@ -356,6 +357,9 @@ lns <- 1
   ttLines <- catch12m[gsub('[[:digit:]]', '', catch12m$Trap) %in% lineGrps[[lns]],]
   ttCum <- cumCatch[gsub('[[:digit:]]', '', cumCatch$Trap) %in% lineGrps[[lns]],]
   with(ttLines, plot(E, S, cex=0.7, col='grey50', axes=FALSE, xlab='', ylab=''))
+  ttUsr <- par()$usr
+  rasterImage(myMap, ttUsr[1], ttUsr[3], ttUsr[2], ttUsr[4])
+  with(ttLines, points(E, S, cex=0.7, col='grey50'))
   for (i in 4:ncol(catch12m))
   {  
     points(ttLines[ttLines[,i]!=0, c('E', 'S')], pch=16, col=ttCols[ncol(catch12m)+1-i],
@@ -366,9 +370,8 @@ lns <- 1
   {
     with(ttLines[gsub('[[:digit:]]', '', ttLines$Trap)==i,], lines(E, S, col=lCols[i]))
   }
-  legend('bottomright', legend=c('Alfred 4x4 Track', 'Lake Daniell Track', 'Lake Daniell Terrace',
-                                 'Pell TGerrace', 'Reids Stream'),
-         lty=1, col=lCols, bty='n')
+  legend('bottomright', legend=c('1 catch', '3 catches', '6 catches', '9 catches'),
+         pt.cex=c(1, 3, 6, 9)/2, pch=1, pt.lwd=2, bty='n')
   legend('top', legend=c('Current', '3 months ago', '6 months ago', '9 months ago', '12 months ago'),
          pch=16, col=ttCols[c(1,3,6,9,12)], bty='n')
 }
@@ -377,8 +380,9 @@ lns <- 1
 #   Add actual map (maybe)
 ```
 
-```{r, mthTrapCatch2, fig.height=10, fig.width=8, fig.cap="\\label{mthTrapCatch2}Map of the Lewis Pass H/Way and Campground lines.  Each line is colour-coded as indicated.  The point diameters are proportional to the cumulative catch, and the colour indicates when the mammal was caught (months prior to the present).  An open grey circle indicates a trap which has caught nothing in the past 12 months."}
+```{r, mthTrapCatch2, fig.height=10, fig.width=8, fig.cap="\\label{mthTrapCatch2}Map of the Lewis Pass H/Way and Campground lines.  Each line is a different colour.  The point diameters are proportional to the cumulative catch, and the colour indicates when the mammal was caught (months prior to the present).  An open grey circle indicates a trap which has caught nothing in the past 12 months.  The topographical map overlay is approximate only."}
 par(mar=rep(0, 4))
+myMap <- readJPEG('MapFigure4.jpg')
 ttCols <- viridisLite::inferno(ncol(catch12m)-3)
 
 # for (lns in 1:length(lineGrps))
@@ -387,6 +391,9 @@ lns <- 2
   ttLines <- catch12m[gsub('[[:digit:]]', '', catch12m$Trap) %in% lineGrps[[lns]],]
   ttCum <- cumCatch[gsub('[[:digit:]]', '', cumCatch$Trap) %in% lineGrps[[lns]],]
   with(ttLines, plot(E, S, cex=0.7, col='grey50', axes=FALSE, xlab='', ylab=''))
+  ttUsr <- par()$usr
+  rasterImage(myMap, ttUsr[1], ttUsr[3], ttUsr[2], ttUsr[4])
+  with(ttLines, points(E, S, cex=0.7, col='grey50'))
   for (i in 4:ncol(catch12m))
   {  
     points(ttLines[ttLines[,i]!=0, c('E', 'S')], pch=16, col=ttCols[ncol(catch12m)+1-i],
@@ -397,8 +404,8 @@ lns <- 2
   {
     with(ttLines[gsub('[[:digit:]]', '', ttLines$Trap)==i,], lines(E, S, col=lCols[i]))
   }
-  legend('bottomleft', legend=c('Campground', 'Lewis Pass H/Way'),
-         lty=1, col=lCols, bty='n')
+  legend('bottomleft', legend=c('1 catch', '3 catches', '6 catches', '9 catches'),
+         pt.cex=c(1, 3, 6, 9)/2, pch=1, pt.lwd=2, bty='n')
   legend('top', legend=c('Current', '3 months ago', '6 months ago', '9 months ago', '12 months ago'),
          pch=16, col=ttCols[c(1,3,6,9,12)], bty='n')
 }
@@ -409,7 +416,6 @@ lns <- 2
 
 ```{r, mthTrapCatch3, fig.height=10, fig.width=8, fig.cap="\\label{mthTrapCatch3}Map of the remaining lines (i.e., Campground, Lockingtons, Fergusons Flat, Kellys, Marble Hill and Maruia River).  Each line is a different colour.  The point diameters are proportional to the cumulative catch, and the colour indicates when the mammal was caught (months prior to the present).  An open grey cirlce indicates a trap which has caught nothing in the past 12 months.  The topographical map overlay is approximate only."}
 par(mar=rep(0, 4))
-# myMap <- readJPEG('Figure5.jpg')
 myMap <- readJPEG('MapFigure5.jpg')
 ttCols <- viridisLite::inferno(ncol(catch12m)-3)
 
@@ -420,7 +426,7 @@ lns <- 3
   ttCum <- cumCatch[gsub('[[:digit:]]', '', cumCatch$Trap) %in% lineGrps[[lns]],]
   with(ttLines, plot(E, S, cex=0.7, col='grey50', axes=FALSE, xlab='', ylab='', type='n'))
   ttUsr <- par()$usr
-  rasterImage(myMap, ttUsr[1]-0.0015, ttUsr[3], ttUsr[2]+0.002, ttUsr[4]-0.004,)
+  rasterImage(myMap, ttUsr[1]-0.0015, ttUsr[3], ttUsr[2]+0.002, ttUsr[4]-0.004)
   with(ttLines, points(E, S, cex=0.7, col='grey50'))
   for (i in 4:ncol(catch12m))
   {  
