@@ -20,6 +20,7 @@ output:
 knitr::opts_chunk$set(echo=FALSE, cache=FALSE, error=TRUE)
 library(knitr)
 library(kableExtra)
+library(jpeg)
 library(TraplineTools)
 
 setwd('~/GitHub/SpringsJunction/TrapLines') # set appropriate working directory
@@ -406,8 +407,10 @@ lns <- 2
 #   Add actual map (maybe)
 ```
 
-```{r, mthTrapCatch3, fig.height=10, fig.width=8, fig.cap="\\label{mthTrapCatch3}Map of the remaining lines (i.e., Campground, Lockingtons, Fergusons Flat, Kellys, Marble Hill and Maruia River).  Each line is colour-coded as indicated.  The point diameters are proportional to the cumulative catch, and the colour indicates when the mammal was caught (months prior to the present).  An open grey cirlce indicates a trap which has caught nothing in the past 12 months."}
+```{r, mthTrapCatch3, fig.height=10, fig.width=8, fig.cap="\\label{mthTrapCatch3}Map of the remaining lines (i.e., Campground, Lockingtons, Fergusons Flat, Kellys, Marble Hill and Maruia River).  Each line is a different colour.  The point diameters are proportional to the cumulative catch, and the colour indicates when the mammal was caught (months prior to the present).  An open grey cirlce indicates a trap which has caught nothing in the past 12 months.  The topographical map overlay is approximate only."}
 par(mar=rep(0, 4))
+# myMap <- readJPEG('Figure5.jpg')
+myMap <- readJPEG('MapFigure5.jpg')
 ttCols <- viridisLite::inferno(ncol(catch12m)-3)
 
 # for (lns in 1:length(lineGrps))
@@ -415,7 +418,10 @@ lns <- 3
 {  
   ttLines <- catch12m[gsub('[[:digit:]]', '', catch12m$Trap) %in% lineGrps[[lns]],]
   ttCum <- cumCatch[gsub('[[:digit:]]', '', cumCatch$Trap) %in% lineGrps[[lns]],]
-  with(ttLines, plot(E, S, cex=0.7, col='grey50', axes=FALSE, xlab='', ylab=''))
+  with(ttLines, plot(E, S, cex=0.7, col='grey50', axes=FALSE, xlab='', ylab='', type='n'))
+  ttUsr <- par()$usr
+  rasterImage(myMap, ttUsr[1]-0.0015, ttUsr[3], ttUsr[2]+0.002, ttUsr[4]-0.004,)
+  with(ttLines, points(E, S, cex=0.7, col='grey50'))
   for (i in 4:ncol(catch12m))
   {  
     points(ttLines[ttLines[,i]!=0, c('E', 'S')], pch=16, col=ttCols[ncol(catch12m)+1-i],
@@ -426,10 +432,9 @@ lns <- 3
   {
     with(ttLines[gsub('[[:digit:]]', '', ttLines$Trap)==i,], lines(E, S, col=lCols[i]))
   }
-  legend('right', legend=c('Campground', 'Lockingtons', 'Fergusons Flat', 'Kellys',
-                                 'Marble Hill', 'Maruia River'),
-         lty=1, col=lCols, bty='n')
-  legend('topright', legend=c('Current', '3 months ago', '6 months ago', '9 months ago', '12 months ago'),
+  legend(ttUsr[2]-0.008, ttUsr[4]-0.008, legend=c('1 catch', '3 catches', '6 catches', '9 catches'),
+         pt.cex=c(1, 3, 6, 9)/2, pch=1, pt.lwd=2, bty='n')
+  legend('right', legend=c('Current', '3 months ago', '6 months ago', '9 months ago', '12 months ago'),
          pch=16, col=ttCols[c(1,3,6,9,12)], bty='n')
 }
 # To do:
