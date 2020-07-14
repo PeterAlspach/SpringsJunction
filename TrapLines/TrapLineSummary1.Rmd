@@ -37,7 +37,7 @@ tl <- tl$tl
 ```{r getReady}
 # Set the cut-off dates for the monthly intervals
 lastDate <- sort(tl$Date.Checked, decreasing=TRUE)[1]
-beginAt <- 22 # Good options are 10/11 and 22/23
+beginAt <- 10 # Good options are 10/11 and 22/23
 obsMth <- setCutDates(beginAt, yr, tl$jDay)
 mth <- max(as.numeric(obsMth), na.rm=TRUE)
 
@@ -358,7 +358,7 @@ lns <- 1
   ttCum <- cumCatch[gsub('[[:digit:]]', '', cumCatch$Trap) %in% lineGrps[[lns]],]
   with(ttLines, plot(E, S, cex=0.7, col='grey50', axes=FALSE, xlab='', ylab=''))
   ttUsr <- par()$usr
-  rasterImage(myMap, ttUsr[1], ttUsr[3], ttUsr[2], ttUsr[4])
+  rasterImage(myMap, ttUsr[1], ttUsr[3]-0.002, ttUsr[2], ttUsr[4]+0.0005)
   with(ttLines, points(E, S, cex=0.7, col='grey50'))
   for (i in 4:ncol(catch12m))
   {  
@@ -392,7 +392,7 @@ lns <- 2
   ttCum <- cumCatch[gsub('[[:digit:]]', '', cumCatch$Trap) %in% lineGrps[[lns]],]
   with(ttLines, plot(E, S, cex=0.7, col='grey50', axes=FALSE, xlab='', ylab=''))
   ttUsr <- par()$usr
-  rasterImage(myMap, ttUsr[1], ttUsr[3], ttUsr[2], ttUsr[4])
+  rasterImage(myMap, ttUsr[1], ttUsr[3]-0.0015, ttUsr[2], ttUsr[4]+0.0025)
   with(ttLines, points(E, S, cex=0.7, col='grey50'))
   for (i in 4:ncol(catch12m))
   {  
