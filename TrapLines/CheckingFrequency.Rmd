@@ -1,0 +1,73 @@
+---
+title: "Maruia Trap-lines: Checking Frequency Considerations"
+author: "Peter Alspach"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+    pdf_document:
+  # html_document:
+  # html_notebook:
+    theme: spacelab
+    toc: yes
+    toc_depth: 5
+    # toc_float: yes
+    # code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, cache=FALSE, error=TRUE)
+library(knitr)
+library(kableExtra)
+library(jpeg)
+library(TraplineTools)
+
+setwd('~/GitHub/SpringsJunction/TrapLines') # set appropriate working directory
+```
+
+## Introduction
+
+This document explores the effect of checking traps more frequently than once per month.  Clearly, if the probability of a trap catching a pest during any 24-hour period is zero, then checking frequency will not have any impact.  In contrast, if the probability is one, then increasing checking frequency to daily would be optimal.  Thus, the value of increasing checking frequency will depend on the probability of catching a pest.
+
+The purpose of increasing checking frequency is to decrease the number of pests in the environment.  This will decrease the probability of a trap catching a pest.  Ideally, this change in catch probability would to be taken into account.  However, since we don't know how much it will change^[It is likely to be a sigmoidal function of the initial catch probability since for both extremely low and extremely high probabilities it would not be expected to change.] it has been ignored.
+
+Different traps may have different probabilities of catching a pest.  Some factors which possibly affect this are: general locality/environment (e.g., bush edge, pasture), specific location and orientation, trap functionality.  Preliminary investigation of the traps at Maruia (enter link to report here) suggest that the first might be important, but the others are not major considerations.  This, too, is ignored in the following considerations.
+
+```{r calculations}
+pC <- (1:25)/500 # probability of trap catching a pest in a 24-hour period
+maxFreq <- 35 # number of days between checks
+nTraps <- 500
+cumCatch <- matrix(0, length(pC), maxFreq, dimnames=list(pC, 1:maxFreq))
+cumCatch[,1] <- pC
+for (j in 1:length(pC))
+{
+  for (i in 2:maxFreq)  cumCatch[j,i] <- pC[j]+(1-pC[j])*cumCatch[j, i-1]
+}
+# Need to add function to allow for a decrease in pC
+```
+## Effect of checking frequency
+
+If the daily catch probability is low (e.g., 0.004, meaning that only 0.4% of the traps will catch a pest in a one day interval), then a monthly checking interval would be expected to catch about `r round(100*cumCatch["0.004",30]/(cumCatch["0.004",1]*30))`\% of what would be caught if the traps were checked daily (Figure \ref{figure1}).  In contrast, if the catch probability is high (e.g., 0.046), then monthly checking is much worse than daily checking (capturing a little over half at `r round(100*cumCatch["0.046",30]/(cumCatch["0.046",1]*30))`\%).  Obviously, daily checking is not practical, but at such a high catch probability bi-monthly checking would be expected to increase the catch to `r round(100*cumCatch["0.046",15]/(cumCatch["0.046",1]*15))`\%, and weekly to `r round(100*cumCatch["0.046",7]/(cumCatch["0.046",1]*7))`\%, of daily checking.
+
+```{r figure1, fig.height=6, fig.cap="\\label{figure1}Reduction in expected catch relative to daily checking for some selected daily catch probabilities (as indicated).  Dotted lines have been included to emphasise weekly (blue), bi-monthly (purple) and monthly (red) checking."}
+par(mar=c(3,3,0.5,2), las=1, mgp=c(2.2, 0.8, 0), xpd=TRUE)
+keyPC <- c(2,5,7,11,18,23)
+keyFreq <- c(7,15,30)
+plot(1:35, cumCatch[keyPC[length(keyPC)],]/((1:35)*cumCatch[keyPC[length(keyPC)],1]), type='n', bty='n',
+     xlab='Frequency of checking (days)',
+     ylab='Expected catch relative to daily checking') 
+# for (i in keyFreq) lines(c(i,i), c(par()$usr[3],1), lty='dotted')
+for (i in keyPC)
+{
+  tt <- cumCatch[i,]/((1:35)*cumCatch[i,1])
+  lines(1:35, tt)
+  text(35.5, tt[length(tt)], paste('p', cumCatch[i,1], sep='='), adj=0, cex=0.8)
+  for (j in 1:length(keyFreq)) lines(c(par()$usr[1], keyFreq[j]), rep(tt[keyFreq[j]], 2), lty='dotted',
+                                     col=c('blue','purple','red')[j])
+}
+
+```
+
+To put these figures in some sort of perspective, with 500 traps^[The actual number of trap boxes at Maruia is a little more than this.] each with a daily catch probability of 0.046, one would expected to catch `r round(cumCatch["0.046",30]*500)` pests in a month if checked once and `r round(2*cumCatch["0.046",15]*500)` pests if checked twice during the month (at even intervals).  The latter approxiates the number caught in bi-monthly checking for June 2020^[More accurately 10 June to 10 July].
+
+## Final comments
+
+As mentioned in the introduction, it is unlikely that the catch probability is the same for each trap.  It is not impossible to extend the modelling presented here to allow for different catch probabilities.  My hunch would be that it would make the case for bi-monthly checks at high (average) catch probabilities even more compelling.
