@@ -1,0 +1,96 @@
+---
+title: "Maruia Trap-lines: Trapping patterns"
+author: "Peter Alspach"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  pdf_document:
+  # html_document:
+  # html_notebook:
+  theme: spacelab
+toc: yes
+toc_depth: 5
+# toc_float: yes
+# code_folding: hide
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, cache=FALSE, error=TRUE)
+library(knitr)
+library(kableExtra)
+library(jpeg)
+library(TraplineTools)
+
+setwd('~/GitHub/SpringsJunction/TrapLines') # set appropriate working directory
+```
+
+## Introduction
+
+Different traps may have different probabilities of catching a pest.  Some factors which possibly affect this are: general locality/environment (e.g., bush edge, pasture), specific location and orientation, and trap functionality.  The first might be detected as an auto-correlation between adjacent traps (i.e., the catch from adjacent traps will be more closely correlated than those from far away).  The other two could show up as a relatively small proportion of the traps catching a relatively high proportion of the pests (sometimes referred to as the 80:20 rule).
+
+During 2019 is was apparent that many traps, especially along the Alfred 4x4 line, were not functioning.  Hence, all traps on this line, and the Lake Daniell Track line, were replaced with new stainless steel traps towards the end of the year.  Thus, 2019 data is not suited for the current purpose.  Data from the 2020 year to date will be used.  Some traps are missing (so have naturally caught nothing) and these are excluded from the analysis.  In addition, the Alfred 4x4 line has traps numbered 31-78, but the database only has 32-76.  As a result, catches on 31, 77 and 78 have been recorded as being from nearby traps.  This could potentially distort the analysis.  Thus traps 32, 33 and 74-76 on this line are also omitted from the analysis.
+
+## The 80:20 rule
+
+Some traps were checked more frequently than others.  Thus, the data were expressed as catch per check before testing the 80:20 rule.
+
+```{r 2020}
+tl <- getTrapData()$tl # current year's data
+
+# Remove missing traps
+ttTab <- table(tl[tl$Status=='Missing','Tag.No'])
+missTraps <- names(ttTab[ttTab>8])
+tl <- tl[!(tl$Tag.No %in% missTraps),]
+
+# Remove Alfred 32-33 amd 74-76
+tl <- tl[!(tl$Tag.No %in% paste0('A', c(32,33,74,75,76))),]
+
+ttTab <- as.matrix(table(tl$Tag.No, tl$Trap.1)) # tabulate catches
+# Get total catch of selected animals
+catch <- apply(ttTab[, c('Cat','Possum','Rat','Stoat','Weasel')], 1, sum, na.rm=TRUE)
+cpc <- catch/table(tl$Tag.No) # catch per check
+cpc <- cpc[order(cpc, decreasing = TRUE)] # sort from highest to lowest
+ccpc <-  cumsum(cpc) # cumulate
+
+rule <- cbind(10*(1:9), round(100*ccpc[round((1:9)*length(ccpc)/10)]/max(ccpc), 0))
+row.names(rule) <- paste0(rule[,1], '%')
+rule <- cbind(rule[,2], 100-rule[,2])
+colnames(rule) <- c('Top','Rest')
+```
+
+The top 20% of the traps caught `r paste0(rule['20%',1], '%')` of the pests (Table \ref{tableRule}).  In contrast, the bottom 20% caught only `r paste0(rule['80%',2], '%')` of the pests.  Even if all traps had an equal probability of catching a pest, one would expect the best 20% to catch more than 20% of the pests (by definition of 'best').
+
+```{r tableRule}
+kable(rule, 'latex', booktabs=TRUE,
+      caption="\\label{tableRule}The catch of the top 10-90\\% of the traps, and that of the rest.") %>%
+  kable_styling(latex_options="hold_position") %>%
+  column_spec(2, bold=TRUE, color='blue') %>%
+  column_spec(3, color='gray') %>%
+  row_spec(2, bold=TRUE, background="#e5e5e5")
+```
+
+```{r ruleEqual}
+# What could one expect by chance if all traps have an equal probability of catching an animal
+pC <- mean(cpc) # probability of catch during the period
+nChks <- round(mean(table(tl$Tag.No))) # average checks per trap during the period
+ttRes <- array(dim=c(9,2,1000))
+for (i in 1:dim(ttRes)[3])
+{
+  ttCatch <- rbinom(length(catch), nChks, pC)
+  ttCatch <- ttCatch[order(ttCatch, decreasing=TRUE)]
+  ttCatch <- cumsum(ttCatch)
+  ttRule <- round(100*ttCatch[round((1:9)*length(ttCatch)/10)]/max(ttCatch), 0)
+  ttRes[,,i] <- cbind(ttRule, 100-ttRule)
+}
+# c(min(ttRes[2,1,]), max(ttRes[2,1,]), min(ttRes[8,1,]), max(ttRes[8,1,]))
+# That is, based on chance alone one would expect the best 20% to catch somewhere between 27 and 29% of
+# the animals and the worst 20% between 11 and 13%
+```
+Using the mean catch of per trap per check (i.e., `r round(pC, 2)`) and the mean number of checks (i.e., `r nChks`), one thousand simulations were conducted assuming  each trap had the same probability of catching a pest.  For each simulation, the percentage of pests caught by the top 20% of the traps (which varied for each simulation) was computed.  The mean was `r paste0(round(mean(ttRes[2,1,]), 1), '%')`, with a 95% confidence interval of``r paste0(quantile(ttRes[2,1,], 0.025), '%')` to `r paste0(quantile(ttRes[2,1,], 0.975), '%')`.  Thus, the observed value of  `r paste0(rule['20%',1], '%')` is only slightly over the upper limit of what one might expect by chance. 
+
+### Additional comments
+
+Some of the boxes (notably the river lines, but also some individual boxes on other lines) were double traps.  Only the catches of the Trap 1 were considered in this analysis.  However, this would still give a bias towards double trap boxes caching more.  Thus, the slightly higher than expected rate of catching for the top 20% of traps can be partly explained by this.  It seems reasonable to conclude that, at present, there is little evidence that some traps are catching more than others for any reason other than random sampling, or general environment which is considered in the next section.
+
+## General environment
+
+As mentioned in the introduction, one would expect that any effects of general environmen would be apparent through auto-correlation of catches neighbouring traps.
