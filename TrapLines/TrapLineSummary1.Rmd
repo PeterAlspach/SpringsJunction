@@ -7,8 +7,8 @@ output:
   # html_document:
   # html_notebook:
     theme: spacelab
-    toc: yes
-    toc_depth: 5
+toc: yes
+toc_depth: 5
     # toc_float: yes
     # code_folding: hide
 ---
@@ -300,7 +300,7 @@ kable(chkTab, 'latex', booktabs=TRUE) %>%
 
 ## Catch by Trap
 
-It may be of interest to know which traps are catching the most mammals.  This is shown in the following 'maps'^[No attempt has been made to ensure that the aspect ratio of the maps is correct.  This will be addressed in future.] (Figures \ref{mthTrapCatch1}, \ref{mthTrapCatch2} and \ref{mthTrapCatch3}).  These are a little complicated.  Each map shows a collection of lines, and the location of the traps on these lines.  The symbols indicate the cumulative catch over the previous twelve months such that the diameter of the cycle is proportional to the number of mammals caught, and the colour of the ring indicates the number of months prior to the current.  Thus, the lack of yellow-shaded rings for the Campground (Figure \ref{mthTrapCatch2} or \ref{mthTrapCatch3}) shows that no mammals were caught on this line 9-12 months ago, although more recently these traps have caught a good number of mammals.  Also, one can see traps 4, 9 and 10 have not caught anything during the last year, which is because these traps are missing.
+It may be of interest to know which traps are catching the most mammals.  This is shown in the following 'maps'^[No attempt has been made to ensure that the aspect ratio of the maps is correct.  This allows for the full page to be utilised.] (Figures \ref{mthTrapCatch1}, \ref{mthTrapCatch2} and \ref{mthTrapCatch3}).  These are a little complicated.  Each map shows a collection of lines, and the location of the traps on these lines.  The symbols indicate the cumulative catch over the previous twelve months such that the diameter of the cycle is proportional to the number of mammals caught, and the colour of the ring indicates the number of months prior to the current.  Thus, a lack of yellow-shaded rings indicates that no mammals were caught 9-12 months ago.  Similarly, lack of dark blue or purple shaded rings indicates that no mammals have been caught recently.  Also, one can see traps 4, 9 and 10 on the Campground have not caught anything during the last year, which is because these traps are missing.
 
 ```{r mthCatchT}
 # Current year
