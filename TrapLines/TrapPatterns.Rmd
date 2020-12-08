@@ -94,3 +94,23 @@ Some of the boxes (notably the river lines, but also some individual boxes on ot
 ## General environment
 
 As mentioned in the introduction, one would expect that any effects of general environmen would be apparent through auto-correlation of catches neighbouring traps.
+
+```{r sandpit}
+tt <- cpc[substring(names(cpc), 1, 1)=='S']
+tt <- tt[order(names(tt))]
+tt <- cbind(tt[1:(length(tt)-2)], tt[2:(length(tt)-1)], tt[-(1:2)])
+plot(jitter(apply(tt[,c(1,3)], 1, mean)), jitter(tt[,2]))
+cor.test(apply(tt[,c(1,3)], 1, mean), tt[,2])
+
+tt <- cpc[substring(names(cpc), 1, 1)=='L']
+tt <- tt[order(names(tt))]
+tt <- cbind(tt[1:(length(tt)-2)], tt[2:(length(tt)-1)], tt[-(1:2)])
+plot(jitter(apply(tt[,c(1,3)], 1, mean)), jitter(tt[,2]))
+cor.test(apply(tt[,c(1,3)], 1, mean), tt[,2])
+
+tt <- cpc[substring(names(cpc), 1, 1)=='R']
+tt <- tt[order(names(tt))]
+tt <- cbind(tt[1:(length(tt)-2)], tt[2:(length(tt)-1)], tt[-(1:2)])
+plot(jitter(apply(tt[,c(1,3)], 1, mean)), jitter(tt[,2]))
+cor.test(apply(tt[,c(1,3)], 1, mean), tt[,2])
+```
