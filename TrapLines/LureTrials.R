@@ -1,5 +1,5 @@
 # ---
-#   title: "Maruia Trap-lines: Monthly Summary"
+#   title: "Maruia Trap-lines: Lure Trials"
 # author: "Peter Alspach"
 # date: "`r format(Sys.time(), '%d %B, %Y')`"
 # output:
@@ -27,7 +27,8 @@ setwd('~/GitHub/SpringsJunction/TrapLines') # set appropriate working directory
 # 
 # ```{r readData}
 # Read the data
-tl <- getTrapData(dstOffset=TRUE)
+tl <- getTrapData('TrapCatches2020.csv', dstOffset=TRUE)
+# tl <- getTrapData(dstOffset=TRUE)
 yr <- tl$yr
 tl <- tl$tl
 # ```
