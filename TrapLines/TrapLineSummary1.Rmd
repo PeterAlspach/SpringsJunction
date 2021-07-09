@@ -14,6 +14,8 @@ toc_depth: 5
 ---
 
 <!-- To do: -->
+<!-- Include A77 and A&* in trap coordinates file -->
+
 <!-- Mammals are defined at the end of the 'getReady' chunk (about line 45) -->
 
 ```{r setup, include=FALSE}
@@ -29,7 +31,7 @@ setwd('~/GitHub/SpringsJunction/TrapLines') # set appropriate working directory
 
 ```{r readData}
 # Read the data
-# tl <- getTrapData(recentMth = 'Export.csv', append=TRUE, dstOffset=TRUE) # Last date 1-Dec-2020
+# tl <- getTrapData(recentMth = '~/Downloads/Export.csv', append=TRUE, dstOffset=TRUE) # Last date 1-Dec-2020
 tl <- getTrapData(dstOffset=TRUE)
 yr <- tl$yr
 tl <- tl$tl
@@ -38,7 +40,7 @@ tl <- tl$tl
 ```{r getReady}
 # Set the cut-off dates for the monthly intervals
 lastDate <- sort(tl$Date.Checked, decreasing=TRUE)[1]
-beginAt <- 8 # Good options are 10/11 and 22/23
+beginAt <- 18 # Good options are 10/11 and 22/23
 obsMth <- setCutDates(beginAt, yr, tl$jDay)
 mth <- max(as.numeric(obsMth), na.rm=TRUE)
 
@@ -314,7 +316,10 @@ catchPY <- catchPerBox(tlPY, obsMthPY)
 catch <- t(catch)
 catchPY <- t(catchPY)
 catch <- catch[, apply(catch, 2, function(x) length(x[x!=0 & !is.na(x)])!=0)]
-catch12m <- cbind(catchPY[,-(1:ncol(catch))], catch)
+# catch12m <- cbind(catchPY[,-(1:ncol(catch))], catch)
+catch12m <- merge(catchPY[,-(1:ncol(catch))], catch, by='row.names', all=TRUE)
+row.names(catch12m) <- catch12m[,1]
+catch12m <- catch12m[,-1]
 ```
 
 ```{r trapCoords}
