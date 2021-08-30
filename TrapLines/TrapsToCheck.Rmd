@@ -27,7 +27,7 @@ setwd('~/GitHub/SpringsJunction/TrapLines')
 
 ```{r readData}
 tl <- read.csv('TrapCatches.csv', header=TRUE, sep=',', stringsAsFactors=FALSE)
-tl18 <- read.csv('TrapCatches2018.csv', header=TRUE, sep=',', stringsAsFactors=FALSE)
+tl18 <- read.csv('TrapCatches2020.csv', header=TRUE, sep=',', stringsAsFactors=FALSE)
 
 # Rename traps with only a single digit 'd' to '0d'
 relNo <- tl[grep('[[:upper:]][[:digit:]]{1}$', tl$Tag.No), 'Tag.No']
