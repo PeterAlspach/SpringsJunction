@@ -48,9 +48,9 @@ mth <- max(as.numeric(obsMth), na.rm=TRUE)
 stdStat <- c('Sprung and Empty','Rat','Stoat','Weasel') # standard trap status
 allMammals <- c('Rat','Stoat','Weasel','Cat','Ferret','Mouse','Rabbit','Hedgehog','Hare','Possum')
 
-# Next compute the number of traps per line (irrespective of whether some are missing)
-nTrap <- table(tl$Line, gsub('([[:upper:]]+)([[:digit:]]+)', '\\2', tl$Tag.No))
-nTrap <- apply(nTrap, 1, function(x) length(x[x!=0]))
+# Next compute the number of trap boxes per line (irrespective of whether some are missing)
+nBox <- with(tl[-grep(' trap2', tl$code),], table(line, gsub('([[:upper:]]+)([[:digit:]]+)', '\\2', code)))
+nBox <- apply(nBox, 1, function(x) length(x[x!=0]))
 ```
 
 ```{r readDataPY}
@@ -89,7 +89,7 @@ Table \ref{currMthN} (below) summarises the number of mammals caught in the most
 # kable(catch[, 1:(length(stdStat)+3)]) %>%
 #   kable_styling(full_width=FALSE) %>%
 kable(catch[, 1:(length(stdStat)+3)], 'latex', booktabs=TRUE,
-      caption="\\label{currMthN}Current month's catch for each line. Note: nTrap is the number of functioning traps (i.e., missing and non-functioning traps have been omitted).") %>%
+      caption="\\label{currMthN}Current month's catch for each line. Note: nTrap is the number of functioning trap boxes (i.e., missing and non-functioning traps have been omitted).") %>%
   kable_styling(latex_options="hold_position") %>%
   column_spec(length(stdStat)+4, bold=TRUE, color='blue') %>%
   column_spec(2, color='gray') %>%
@@ -270,9 +270,9 @@ Of these, `r if ('Cat' %in% names (miscSppM)) paste0(mSppFn(miscSppM, 'Cat', 'ca
 
 ### Non-target species
 
-Finally, in the year to date, the following non-target species have been caught: 
+Finally, in the year to date, the following non-target species have been caught:
 `r mSppFn(miscSppY, 'Harrier', 'harrier')`,
-`r mSppFn(miscSppY, 'Robin', 'robins')`, 
+`r mSppFn(miscSppY, 'Robin', 'robins')`,
 `r mSppFn(miscSppY, 'Weka', 'weka')`, and
 `r mSppFn(miscSppY, 'Weka Juvenile', 'weka juveniles')`.
 
