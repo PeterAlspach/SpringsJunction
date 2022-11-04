@@ -107,6 +107,6 @@ kable(round(ttTabPC, 1), 'latex', booktabs=TRUE,
 
 ## Conclusion
 
-At least in Maruia, the practice of leaving any reasonably fresh rodent in the box as additional lure is likely to lead to a substantial increase in the number of stoats caught.
+The comparison between traps in which the rat was left as an additional lure and those for which the rat was discarded is slightly confounded in that most (but not all) fresh rats were left whereas all other rats were discarded.  Nevertheless it seems likely that, at least in Maruia, the practice of leaving any reasonably fresh rodent in the box as additional lure will lead to a substantial increase in the number of stoats caught.
 
 Anecdotally, during the pest plague following the mast year, we noticed that this practice also appeared to increase the number of weasels caught.  Especially smaller weasels which would not normally trigger the trap, but did so when attempting to drag the rat back out of the trap box.  Weasels are also small enough to leave as additional lure and appeared to work as well as rats.  However, for the period examined in this report, none of the `r sum(ttTab[, 'Weasel'])` weasels caught were sufficiently fresh to leave as additional lure.
