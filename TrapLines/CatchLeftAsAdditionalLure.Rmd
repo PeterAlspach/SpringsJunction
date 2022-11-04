@@ -1,0 +1,112 @@
+---
+title: "Maruia Trap-lines: Use of Catch as Additional Lure"
+author: "Peter Alspach"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  pdf_document:
+  # html_document:
+  # html_notebook:
+  theme: spacelab
+# toc: yes
+# toc_depth: 5
+# toc_float: yes
+# code_folding: hide
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, cache=FALSE, error=TRUE)
+library(knitr)
+library(kableExtra)
+library(TraplineTools)
+
+setwd('~/GitHub/SpringsJunction/TrapLines') # set appropriate working directory
+```
+
+```{r readYearsData, include=FALSE}
+catch <- read.csv('TrapRecordsNov2021ToOct2022.csv', sep=',')
+catch <- catch[,c('code','date','recorded.by','species.caught','status',
+                  'bait.type','bait.details')]
+
+# Rename traps with only a single digit 'd' to '0d'
+relNo <- catch[grep('[[:upper:]][[:digit:]]{1}$', catch$code), 'code']
+relNo <- paste0(substring(relNo, 1, nchar(relNo)-1), '0', substring(relNo, nchar(relNo)))
+catch[grep('[[:upper:]][[:digit:]]{1}$', catch$code), 'code'] <- relNo
+relNo <- catch[grep('[[:upper:]][[:digit:]]{1} trap2', catch$code), 'code']
+relNo <- paste0(substring(relNo, 1, nchar(relNo)-7), '0', substring(relNo, nchar(relNo)-6))
+catch[grep('[[:upper:]][[:digit:]]{1} trap2', catch$code), 'code'] <- relNo
+
+# Remove time from date stamp
+catch$date <- substring(catch$date, 1, 10)
+yr <- as.integer(substring(catch[substring(catch$date, 6)>='01-16', 'date'][1], 1, 4))
+catch$jDay <- julian.Date(as.Date(catch$date), origin=as.Date(paste0(yr-1, '-10-31')))
+# Note: jDay is days since 1 November 2021
+
+lastDate <- sort(catch$date, decreasing=TRUE)[1]
+beginAt <- 22 # Good options are 10/11 and 22/23
+```
+
+```{r Realign, include=FALSE}
+# Code chunk to align previous month's bait with current month's catch
+catch$period <- as.numeric(setCutDates(beginAt, yr, catch$jDay))
+catch$lagPeriod <- catch$period+1
+
+tt <- merge(catch[,c('code','period','date','species.caught','status')],
+            catch[,c('code','lagPeriod','recorded.by','bait.type','bait.details',
+                     'species.caught')],
+            by.x=c('code','period'), by.y=c('code','lagPeriod'))
+
+tt <- tt[tt$recorded.by %in% c('PA','RR'),] # only PA and RR recorded when catch left
+```
+
+```{r Tabulate, include=FALSE}
+# Create categories of interest
+tt$category <- tt$species.caught.y
+tt[tt$category %in% c('Mouse','Rat'), 'category'] <- 'Rodent'
+tt[tt$category %in% c('Stoat','Weasel'), 'category'] <- 'Mustelid'
+tt[!(tt$category %in% c('None','Mustelid','Rodent')), 'category'] <- 'Other'
+tt[grep(' left as ', tt$bait.details), 'category'] <-
+  paste0(tt[grep(' left as ', tt$bait.details), 'category'], '*')
+
+# Tabulate
+ttTab <- table(tt$category, tt$species.caught.x)
+ttMargin <- apply(ttTab, 1, sum)
+ttTabPC <- 100*ttTab/ttMargin
+```
+
+## Introduction
+
+There are over 500 trap boxes on 12 separate lines at Te Maruia Waka Huia.  These were established by the Department of Conservation (DOC) and since 2018 have been monitored by a group of volunteers. A few years ago, during the rodent plague after the beech mast, some volunteers began leaving some of the freshly caught pests as additional lure.  This appeared to increase the catch of mustelids, and thus a system was devised to record which traps had the catch left as additional lure\footnote{If the catch was used as an additional lure, it was left under the existing lure.  This was recorded in the notebook with an asterisk.  When entering the data into TrapNZ this was noted in the `bait.details' column.}.
+
+This report examines the last 12 months' data to see if leaving the catch as an additional lure had any appreciable impact on the subsequent month's catch.
+
+## Results
+
+The data were restricted to those where, in the previous month, the recorder had been either PA or RR as these two were using the asterisk recording method (mentioned in the footnote).  Although this technique has been employed for more than a year (closer to two years), only the past 12 months were considered as we could then be sure that the practice of recording whether the catch was left was consistently followed.
+
+The first table (Table \ref{catchSumm}) shows the total catch for the 12 month period categorised according to the pervious month's catch.  For example, there were `r ttMargin[names(ttMargin)=='Rodent']` instances were a rodent had been caught in the previous month but not left as additional lure (\textit{cf} `r ttMargin[names(ttMargin)=='Rodent*']` where the rodent had been left).  Of the former `r ttMargin[names(ttMargin)=='Rodent']`, `r ttTab[rownames(ttTab)=='Rodent', 'Stoat']` subsequently caught a stoat (\textit{cf} `r ttTab[rownames(ttTab)=='Rodent*', 'Stoat']` where the rodent had been left).
+
+```{r catchSumm}
+ttTab1 <- cbind(ttTab, TOTAL=ttMargin)
+kable(ttTab1, 'latex', booktabs=TRUE,
+      caption="\\label{catchSumm}Summary of the catches over 12 months categorised according to the previous month's catch.  Rodent* indicates that the rodent (usually a rat, but occasionally a mouse) had been left as additional lure.") %>%
+  kable_styling(latex_options="hold_position") %>%
+  column_spec(ncol(ttTab)+2, bold=TRUE, color='blue')
+```
+
+The results are more easily compared if expressed as a percentage (Table \ref{catchSummPC}).  Almost one fifth (`r round(ttTabPC[rownames(ttTabPC)=='Rodent*', 'Stoat'], 1)`\%) of the traps where the rodent had been left as an additional lure caught a stoat the following month \textit{cf} less than 2\% (`r round(ttTabPC[rownames(ttTabPC)=='Rodent', 'Stoat'], 1)`\%) where the trapped rodent had been discarded.
+
+It is also interesting to note that traps that had previously caught a mustelid appeared more likely to catch a stoat or weasel in the following month\footnote{But less likely to catch a rodent.} when compared to traps that had caught nothing or something else (Table \ref{catchSummPC}) .  This is despite the mustelid not being left as additional lure.  This suggests that leaving the rodent as an additional lure not only increases the incidence of catching a mustelid in the following month, but also catching that mustelid increases the likelihood of catching a mustelid in the month following.
+
+```{r catchSummPC}
+ttTab1 <- cbind(ttTab, TOTAL=ttMargin)
+kable(round(ttTabPC, 1), 'latex', booktabs=TRUE,
+      caption="\\label{catchSummPC}As in the previous table, but with the catch expressed as a percentage of the total catch for each category. Mustelid catches have been highlighted in blue.") %>%
+  kable_styling(latex_options="hold_position") %>%
+  column_spec(8:9, bold=TRUE, color='blue')
+```
+
+## Conclusion
+
+At least in Maruia, the practice of leaving any reasonably fresh rodent in the box as additional lure is likely to lead to a substantial increase in the number of stoats caught.
+
+Anecdotally, during the pest plague following the mast year, we noticed that this practice also appeared to increase the number of weasels caught.  Especially smaller weasels which would not normally trigger the trap, but did so when attempting to drag the rat back out of the trap box.  Weasels are also small enough to leave as additional lure and appeared to work as well as rats.  However, for the period examined in this report, none of the `r sum(ttTab[, 'Weasel'])` weasels caught were sufficiently fresh to leave as additional lure.
