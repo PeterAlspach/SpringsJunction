@@ -1,0 +1,194 @@
+---
+title: "Maruia Trap-lines: Double vs Single Set Boxes"
+author: "Peter Alspach"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  pdf_document:
+  # html_document:
+  # html_notebook:
+  theme: spacelab
+# toc: yes
+toc_depth: 5
+# toc_float: yes
+# code_folding: hide
+---
+  
+  <!-- Mammals are defined at the end of the 'getReady' chunk (about line 45) -->
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, cache=FALSE, error=TRUE)
+library(knitr)
+# library(kableExtra)
+library(jpeg)
+library(TraplineTools)
+
+setwd('~/GitHub/SpringsJunction/TrapLines') # set appropriate working directory
+
+# Function to ensure trap codes correspond to the new codes used in trap.nz 
+convTable <- cbind(new=c('A','B','E','F','K','M','P','P','RS','SH','T'),
+                   old=c('ALF','MRB','EE','FF','AK','MBL','PS','PT','R','SHY','LDT')) # Note CG and LD unchanged
+stdCodeLetters <- function(codes=tl$code, cT=convTable)
+{
+  for (i in 1:nrow(cT))
+  {
+    codes[grep(paste0(cT[i,'old'], '[[:digit:]]'), codes)] <- 
+      gsub(paste0(cT[i,'old'], '([[:digit:]]+)'), paste0(cT[i,'new'], '\\1'),
+           codes[grep(paste0(cT[i,'old'], '[[:digit:]]'), codes)])
+  }
+  return(codes)
+}
+```
+
+## Introduction
+
+There are single-set and double-set trap boxes at Maruia, and both Ferguson Flat and State Highway have portions where they alternate.  This provides an opportunity to investigate whether or not there is much of a difference in catch rate between the two box types^[For this purpose, it would be better if they followed a randomised design rather than simply alternating.].
+
+
+```{r getReady}
+# Set the cut-off dates for the monthly intervals
+beginAt <- 22 # Good options are 10/11 and 22/23
+
+# Set the standard trap status of interest
+allMammals <- c('Rat','Stoat','Weasel','Cat','Ferret','Mouse','Rabbit','Hedgehog','Hare','Possum')
+```
+
+```{r readDataPYs}
+# Read the data for the previous years
+tl22 <- getTrapNZData(paste0('manage_trap_records', 2022, '.csv'))$tl
+tl21 <- getTrapNZData(paste0('manage_trap_records', 2021, '.csv'))$tl
+tl20 <- getTrapNZData(paste0('manage_trap_records', 2020, '.csv'))$tl
+tl19 <- getTrapNZData(paste0('manage_trap_records', 2019, '.csv'))$tl
+tl18 <- getTrapNZData(paste0('manage_trap_records', 2018, '.csv'))$tl
+
+# Ensure all trap names correspond to those in trap.nz
+tl22$code <- stdCodeLetters(tl22$code)
+tl21$code <- stdCodeLetters(tl21$code)
+tl20$code <- stdCodeLetters(tl20$code)
+tl19$code <- stdCodeLetters(tl19$code)
+tl18$code <- stdCodeLetters(tl18$code)
+
+obsMth22 <- setCutDates(beginAt, 2022, tl22$jDay)
+obsMth21 <- setCutDates(beginAt, 2021, tl21$jDay)
+obsMth20 <- setCutDates(beginAt, 2020, tl20$jDay)
+obsMth19 <- setCutDates(beginAt, 2019, tl19$jDay)
+obsMth18 <- setCutDates(beginAt, 2018, tl18$jDay)
+```
+
+```{r Catches}
+catch22 <- catchNZPerBox(tl22, obsMth22)
+catch21 <- catchNZPerBox(tl21, obsMth21)
+catch20 <- catchNZPerBox(tl20, obsMth20)
+catch19 <- catchNZPerBox(tl19, obsMth19)
+catch18 <- catchNZPerBox(tl18, obsMth18)
+
+catch22 <- t(catch22)
+catch21 <- t(catch21)
+# For some reason results for traps SH01 - SH43 are missing for the first check of 2021.
+# Replace the missing values with 2 single catches on random traps (based on surrounding data)
+catch21[is.na(catch21[,1]) & substring(rownames(catch21), 1, 2)=='SH',1] <-
+  c(rep(0, 41), 1, 1)[order(runif(43))]
+catch20 <- t(catch20)
+catch19 <- t(catch19)
+# As with catch21 above, thefourth, fifth and sixth checks are missing for traps SH01-SH44
+tt <- c('SH01','SH03','SH05','SH07','SH09','SH35','SH39','SH41','SH43')
+catch19[rownames(catch19) %in% tt, 4] <- c(rep(0, 5), rep(1,4))[order(runif(9))]
+catch19[rownames(catch19) %in% tt, 5] <- c(rep(0, 3), rep(1,6))[order(runif(9))]
+catch19[rownames(catch19) %in% tt, 6] <- 1
+tt <- c(paste0('SH0', 2:8), paste0('SH', c(10:34,36,38,40,42,44)))
+catch19[rownames(catch19) %in% tt, 4] <- c(rep(0, 13), rep(1,24))[order(runif(37))]
+catch19[rownames(catch19) %in% tt, 5] <- c(rep(0, 9), rep(1,28))[order(runif(37))]
+catch19[rownames(catch19) %in% tt, 6] <- c(rep(0, 4), rep(1,33))[order(runif(37))]
+catch18 <- t(catch18)
+tt <- c('SH01','SH03','SH05','SH07','SH09','SH35','SH39','SH41','SH43')
+catch18[rownames(catch18) %in% tt, 8] <- c(rep(0, 6), rep(1,3))[order(runif(9))]
+catch18[rownames(catch18) %in% tt, 12] <- c(rep(0, 6), rep(1,3))[order(runif(9))]
+tt <- c(paste0('SH0', 2:8), paste0('SH', c(10:34,36,38,40,42,44)))
+catch18[rownames(catch18) %in% tt, 8] <- c(rep(0, 29), rep(1,8))[order(runif(37))]
+catch18[rownames(catch18) %in% tt, 12] <- c(rep(0, 25), rep(1,12))[order(runif(37))]
+
+colnames(catch22) <- paste(colnames(catch22), 22, sep='-')
+colnames(catch21) <- paste(colnames(catch21), 21, sep='-')
+colnames(catch20) <- paste(colnames(catch20), 20, sep='-')
+colnames(catch19) <- paste(colnames(catch19), 19, sep='-')
+colnames(catch18) <- paste(colnames(catch18), 18, sep='-')
+```
+
+```{r sumRelevantTraps}
+# Relevant traps - LD00 is equivalent to F00
+DSTraps <- cbind(trap=c('LD00', paste0('F0', 1:6),
+                        paste0('SH0', 1:9), paste0('SH', c(10,34:36,38:44))),
+                 type=c('Single','Double')[c(rep(1:2,8), 1, 1,2,1, 1,2,1,2,1,2,1)])
+DSTraps <- DSTraps[order(DSTraps[,'trap']),]
+
+catch22 <- catch22[row.names(catch22) %in% DSTraps[,1],]
+catch21 <- catch21[row.names(catch21) %in% DSTraps[,1],]
+catch20 <- catch20[row.names(catch20) %in% DSTraps[,1],]
+catch19 <- catch19[row.names(catch19) %in% DSTraps[,1],]
+catch18 <- catch18[row.names(catch18) %in% DSTraps[,1],]
+
+tt <- cbind('2022'=apply(catch22, 1, sum, na.rm=T),
+            '2021'=apply(catch21, 1, sum, na.rm=T),
+            '2020'=apply(catch20, 1, sum, na.rm=T),
+            '2019'=apply(catch19, 1, sum, na.rm=T),
+            '2018'=apply(catch18, 1, sum, na.rm=T))
+
+tt <- merge(DSTraps, tt, by.x='trap', by.y='row.names')
+tt[tt[,'trap']=='LD00', 'trap'] <- 'F00' # LD00 is equivalent to F00
+
+DSTable <- aggregate(tt[,-(1:2)], list(tt[,2], substring(tt[,1], 1, 1)), mean, na.rm=TRUE)
+names(DSTable)[1:2] <- c('Type','Line')
+DSTable[DSTable[,'Line']=='F', 'Line'] <- 'Ferguson Flat'
+DSTable[DSTable[,'Line']=='S', 'Line'] <- 'State Highway'
+save(catch22, catch21, catch20, catch19, catch18, DSTable, DSTraps, file='DSData.RData')
+# load('DSData')
+```
+
+## Method
+
+On Ferguson Flats, boxes F01, F03 and F05 are double-set; and on State Highway the double-set boxes are SH01, SH03, SH05, SH07, SH09, SH35, SH39, SH41 and SH43.  Thus, the comparative single-set boxes are LD00 (which is equivalent to F00), F02, F04 and F06 on Ferguson Flat; and SH02, SH04, SH06, SH08, SH10, SH34, SH36, SH38, SH40, SH42 and SH44 on the State Highway.  Altogether there are 12 double-set boxes (3 on Ferguson Flat and 9 on the State Highway), and 15 single-set boxes (4 on Ferguson Flat and 11 on the State Highway).
+
+Only data from complete calendar years were used (i.e., 2018-2022 inclusive)^[It is acknowledged that it would be better to consider seasons rather than calendar years, but the latter is simpler.].  On the State Highway, the data were frequently incomplete (mainly in 2018 and 2019, but also 2021).  One could either accept this, or make an attempt to interpolate the missing data.  The results presented here used interpolated data^[This was achieved by simple linear interpolation between the adjoining months, done separately for single- and double-set traps.], although simply removing the missing values gave similar results.  The mammalian catches^[These were mostly rats, with some stoats.  There were also occasional catches of weasels, cats and mice.] for these traps was totalled for each year, and the mean value for single- and double-set traps for each line computed and tabulated.
+
+Traps were checked monthly, except during the high catch rates experienced around the mast (in 2019 and 2020) when they were checked fortnightly if practical. The boxes on Ferguson Flat are approximately 100m apart, whereas those on the State Highway vary from about 120m to 200m apart.
+
+## Results
+
+```{r summaryTable}
+kable(DSTable[c(2,1,4,3),], digits=2, row.names=FALSE,
+      caption='Mean annual mammalian catch for single- and double-set boxes for
+      Ferguson Flat and the State Highway')
+```
+
+It is apparent from the table that there was little difference in mammalian catch between single- and double-set boxes when the annual catch was about 3 or less (i.e., less than 25% of the traps caught a mammal).  However, with the higher catch rates that occurred around and after the mega-mast, double-set boxes did catch more. 
+
+```{r confInt}
+# load("~/GitHub/SpringsJunction/TrapLines/DSData.RData")
+# catch <- list(catch22=catch22, catch21=catch21, catch20=catch20,
+#               catch19=catch19, catch18=catch18)
+# 
+# qP <- c(0, 0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99, 1)
+# qRes <- matrix(NA, nrow=length(catch), ncol=length(qP), dimnames=list(names(catch), paste0('Q', qP)))
+# 
+# trapS <- c('LD00','F02','F04','F06')
+# trapD <- c('F01','F03','F05')
+# 
+# trapS <- c('SH02', 'SH04', 'SH06', 'SH08', 'SH10', 'SH34', 'SH36', 'SH38', 'SH40', 'SH42', 'SH44')
+# trapD <- c('SH01', 'SH03', 'SH05', 'SH07', 'SH09', 'SH35', 'SH39', 'SH41', 'SH43')
+# 
+# for(i in 1:length(catch))
+# {
+#   tt <- catch[[i]]
+#   ttLambdaS <- apply(tt[rownames(tt) %in% trapS,], 2, mean, na.rm=TRUE)
+#   ttLambdaD <- apply(tt[rownames(tt) %in% trapD,], 2, mean, na.rm=TRUE)
+# 
+#   simS <- matrix(rpois(length(trapS)*10000*12, ttLambdaS), nrow=12)
+#   simD <- matrix(rpois(length(trapD)*10000*12, ttLambdaD), nrow=12)
+#   simSSum <- matrix(apply(simS, 2, sum), nrow=length(trapS))
+#   simDSum <- matrix(apply(simD, 2, sum), nrow=length(trapD))
+#   ttS <- apply(simSSum, 2, mean)
+#   ttD <- apply(simDSum, 2, mean)
+#   qRes[i,] <- quantile(ttD-ttS, qP)
+# }
+# 
+# qRes
+```
