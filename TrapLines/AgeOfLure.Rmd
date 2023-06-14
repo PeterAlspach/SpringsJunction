@@ -1,0 +1,272 @@
+---
+title: "Maruia Trap-lines: Age of Lure"
+author: "Peter Alspach"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  pdf_document:
+  # html_document:
+  # html_notebook:
+  theme: spacelab
+toc: yes
+toc_depth: 5
+# toc_float: yes
+# code_folding: hide
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, cache=FALSE, error=TRUE)
+library(knitr)
+library(kableExtra)
+library(TraplineTools)
+
+setwd('~/GitHub/SpringsJunction/TrapLines') # set appropriate working directory
+
+# Function to ensure trap codes correspond to the new codes used in trap.nz 
+convTable <- cbind(new=c('A','B','E','F','K','M','P','P','RS','SH','T'),
+                   old=c('ALF','MRB','EE','FF','AK','MBL','PS','PT','R','SHY','LDT')) # Note CG and LD unchanged
+stdCodeLetters <- function(codes=tl$code, cT=convTable)
+{
+  for (i in 1:nrow(cT))
+  {
+    codes[grep(paste0(cT[i,'old'], '[[:digit:]]'), codes)] <- 
+      gsub(paste0(cT[i,'old'], '([[:digit:]]+)'), paste0(cT[i,'new'], '\\1'),
+           codes[grep(paste0(cT[i,'old'], '[[:digit:]]'), codes)])
+  }
+  return(codes)
+}
+```
+
+## Introduction
+
+The lure changing regime for the traps at Maruia has settled to salmon lures for four months, which are then replaced with Erayz (rabbit jerky) for a month, before reverting to re-charged salmon lures for the next four months.
+
+At the beginning of 2022, a lure trial was set up to assess a new regime for changing lures.  In this regime, lures are changed once every four months but the even and odd numbered traps are two months out of sync.  At each lure change, the scent on the lure is rotated according to the sequence: salmon oil, meat oil, blood oil.  This means there are always two different oils in the field and there is always a lure either one or two months old within 100m along the trapline.  It also involves less lure changes than the 'standard' regime^[In a 20 month period, the 'standard' regime would involve 8 complete lure changes, whereas the regime under test would involve only 5 (on 10 occasions half of the lures would be changed).].
+
+The plan is to test this regime on Lake Daniell Track and Terrace for a couple of years, with Alfred 4x4 and Pell Terrace as comparison lines.  The trial regime will then switch to Alfred and Pell Terrace, with the Lake Daniell lines reverting to the 'standard' regime for comparison.
+
+The lack of synchrony between the odd and even numbered traps means it is possible to see if the age of the lure is impacting on the catch efficiency without the seasonal component complicating the comparison.  Although the different lure scents are a confounding factor, this is not considered to be as great as the seasonal effect.  This age comparison is the purpose of this analysis.
+
+```{r readData}
+# Read the data
+tl <- getTrapNZData()
+yr <- tl$yr
+tl <- tl$tl
+
+# Ensure all trap names correspond to those in trap.nz
+tl$code <- stdCodeLetters()
+
+# Set the cut-off dates for the monthly intervals
+lastDate <- sort(tl$date, decreasing=TRUE)[1]
+beginAt <- 22 # Good options are 10/11 and 22/23
+obsMth <- setCutDates(beginAt, yr, tl$jDay)
+mth <- max(as.numeric(obsMth), na.rm=TRUE)
+
+# Set the standard trap status of interest
+stdStat <- c('Sprung','Rat','Stoat','Weasel') # standard trap status
+allMammals <- c('Rat','Stoat','Weasel','Cat','Ferret','Mouse','Rabbit','Hedgehog','Hare','Possum')
+```
+
+```{r readDataPY}
+# Read the data for the previous year
+tlPY <- getTrapNZData(paste0('manage_trap_records', yr-1, '.csv'))$tl
+
+# Ensure all trap names correspond to those in trap.nz
+tlPY$code <- stdCodeLetters(tlPY$code)
+
+obsMthPY <- setCutDates(beginAt, yr-1, tlPY$jDay)
+```
+
+```{r LDLinesOnly}
+## Add observed month to the dataframe
+tl[, ncol(tl)+1] <- obsMth
+tlPY[, ncol(tlPY)+1] <- obsMthPY
+
+# Keep the Alfred and Pell Traace lines
+tlAP <- tl[tl$line %in% c('Alfred River 4x4 Track','Pell Terrace'), c(1,5,7,9,12,13,15,16,17,21,22)]
+tlAPPY <- tlPY[tlPY$line %in% c('Alfred River 4x4 Track','Pell Terrace'),
+               c(1,5,7,9,12,13,15,16,17,21,22)]  
+
+# Restrict to Lake Daniell lines
+tl <- tl[tl$line %in% c('Lake Daniells Terrace','Lake Daniells Track'),
+         c(1,5,7,9,12,13,15,16,17,21,22)]
+tlPY <- tlPY[tlPY$line %in% c('Lake Daniells Terrace','Lake Daniells Track'),
+             c(1,5,7,9,12,13,15,16,17,21,22)]
+tl <- tl[order(tl$date),]
+tlPY <- tlPY[order(tlPY$date),]
+
+# Remove the traps which are not part of the trial
+tl <- tl[!(tl$code %in% c('LD00','T21','T22','T23')),]
+tlPY <- tlPY[!(tlPY$code %in% c('LD00','T21','T22','T23')),]
+```
+
+```{r sumOddsEvens}
+# Label odd and even numbered traps
+tt <- as.numeric(substring(tl$code, nchar(tl$code)-1))
+tl[, ncol(tl)+1] <- c('even','odd')[1+2*(tt/2-round(tt/2-.005))]
+tt <- as.numeric(substring(tlPY$code, nchar(tlPY$code)-1))
+tlPY[, ncol(tlPY)+1] <- c('even','odd')[1+2*(tt/2-round(tt/2-.005))]
+
+# Create columns for rat, stoat, other and TE (tripped and empty)
+tl <- cbind(tl, rat=as.integer(tl$species.caught=='Rat'),
+            stoat=as.integer(tl$species.caught=='Stoat'),
+            other=as.integer(!(tl$species.caught %in% c('Rat','Stoat','None'))),
+            TE=as.integer(tl$status=='Sprung' & tl$species.caught=='None'))
+tlPY <- cbind(tlPY, rat=as.integer(tlPY$species.caught=='Rat'),
+              stoat=as.integer(tlPY$species.caught=='Stoat'),
+              other=as.integer(!(tlPY$species.caught %in% c('Rat','Stoat','None'))),
+              TE=as.integer(tlPY$status=='Sprung' & tlPY$species.caught=='None'))
+
+tt <- tl[!duplicated(paste(tl$code, tl$V22)), c('code','V22','rebaited')] # V22 is month
+tl <- aggregate(tl[,c('rat','stoat','other','TE')], tl[,c('code','bait.type','V22','V12')],
+                sum) # sum catches for odd and even trap numbers (V12 is odd/even)
+tl <- merge(tt, tl)
+tt <- tlPY[!duplicated(paste(tlPY$code, tlPY$V22)), c('code','V22','rebaited')]
+tlPY <- aggregate(tlPY[,c('rat','stoat','other','TE')],
+                  tlPY[,c('code','bait.type','V22','V12')], sum) # sum catches as above
+tlPY <- merge(tt, tlPY)
+```
+
+```{r combineTwoYear}
+nTrapInTrial <- 100
+tl$check <- as.numeric(tl$V22)
+tt <- unique(tl$check)
+tt <- data.frame(code=rep(unique(tl$code), each=length(tt)), check=rep(tt, nTrapInTrial))
+tl <- merge(tt, tl, all.x=TRUE)
+tlPY$check <- as.numeric(tlPY$V22)
+tt <- unique(tlPY$check)
+tt <- data.frame(code=rep(unique(tlPY$code), each=length(tt)), check=rep(tt, nTrapInTrial))
+tlPY <- merge(tt, tlPY, all.x=TRUE)
+# Fill in for missing records for T18 and T19 for check 4 in the previous year
+tlPY[tlPY$code=='T18' & tlPY$check==4, -(1:2)] <-
+                     tlPY[tlPY$code=='T16' & tlPY$check==4, -(1:2)]
+tlPY[tlPY$code=='T19' & tlPY$check==4, -(1:2)] <-
+                     tlPY[tlPY$code=='T17' & tlPY$check==4, -(1:2)]
+
+tl$check <- tl$check+12
+tlBoth <- rbind(tlPY, tl)
+tlBoth <- tlBoth[order(tlBoth$check, tlBoth$code),]
+
+tlBoth$age <- 0
+tlBoth[tlBoth$V12=='even', 'age'] <- rep(rep(c(4,1:3),50)[1:(nrow(tlBoth)/100)], each=50)
+tt <- tlBoth[tlBoth$V12=='even', 'age']+2
+tlBoth[tlBoth$V12=='odd', 'age'] <- tt-4*floor((tt-0.001)/4)
+tlBoth$bait.type <- c(rep(NA,100), tlBoth[-(1:100), 'bait.type'])
+tlBoth$age <- c(rep(NA,100), tlBoth[-(1:100), 'age'])
+tlBoth <- tlBoth[-(1:100),]
+tlBoth[tlBoth$bait.type=='Meat Oil', 'bait.type'] <- 'Meat oil'
+
+# aggregate(tlBoth[,c('rat','stoat')], tlBoth[,c('bait.type','age')], sum)
+ttAgg <- aggregate(tlBoth[,c('rat','stoat','other','TE')],
+                   tlBoth[,c('age','check','bait.type')], sum)
+ttAgg$total1 <- apply(ttAgg[,c('rat','stoat','other')], 1, sum, na.rm=TRUE)
+ttAgg$total2 <- apply(ttAgg[,c('rat','stoat','other','TE')], 1, sum, na.rm=TRUE)
+```
+
+## Method
+
+For each check since the beginning of the trial, the total catch of rats, all mammals, and all mammals plus tripped and empty^[Stoats were done separately, but not shown here as the numbers were too low (maximum of one per month for each odd/even category).] were calculated for odd and even trap numbers separately.  These were then plotted showing the lure scent and its age (i.e., months since re-baiting).  No formal statistical analysis was conducted as the graphs did not justify the effort.
+
+## Results
+
+Since rat catches dominate, it is not surprising that all figures (Figures \ref{mthRatCatch}, \ref{mthMammCatch} and \ref{mthAllCatch}) tell a similar story.  There is currently no evidence that the efficacy of the lures declined over the four months that they were in position before re-charging.  There were eight instances where the one and three month old lures occurred on the same check number, and similarly for the two and four month old lures.  There were four instances in which the one month old lure caught more rats than the three month old lure, and four where the reverse was true.  Similarly, there were four instances in which the two month old lure caught more rats than the four month old lure, two where the reverse was true, and two where they were the same.  Furthermore, there was no apparent decline in catch rate with age for any of the sets of four.
+
+The seasonal trend visible in the figures, reflects that observed across the 500+ traps at Maruia.
+
+```{r, mthRatCatch, fig.height=4, fig.cap="\\label{mthRatCatch}Rat catches for each monthly check summed by lure type.  The lines are colour-code to represent the different lures, and the age of the lure (in months) is indicated at each point."}
+par(mar=c(3,3,0.5,2), las=1, mgp=c(2.2, 0.8, 0), xpd=TRUE)
+oils <- c('Blood oil','Meat oil','Salmon oil')
+ttCol <- c('blue','green4','salmon')
+plot(ttAgg$check, ttAgg$rat, type='n', xlab='Check number', ylab='Rat catch')
+for(i in 1:3)
+{
+  tt <- ttAgg[ttAgg$bait.type==oils[i],]
+  tt <- tt[rep(1:nrow(tt), ceiling(0.1+tt$age/4)),]
+  tt[grep('\\.1', rownames(tt)),] <- NA
+#  points(tt[,'check'], tt[,'rat'], col=ttCol[i], pch=16)
+  text(tt[,'check'], tt[,'rat'], tt[,'age'], col=ttCol[i], cex=1.2)
+  lines(tt[,'check'], tt[,'rat'], col=ttCol[i], lwd=2)
+}
+legend('topleft', oils, lty=1, lwd=2, col=ttCol,)
+```
+
+```{r, mthMammCatch, fig.height=4, fig.cap="\\label{mthMammCatch}Mammalian catches for each monthly check summed by lure type.  The lines are colour-code to represent the different lures, and the age of the lure (in months) is indicated at each point."}
+par(mar=c(3,3,0.5,2), las=1, mgp=c(2.2, 0.8, 0), xpd=TRUE)
+oils <- c('Blood oil','Meat oil','Salmon oil')
+ttCol <- c('blue','green4','salmon')
+plot(ttAgg$check, ttAgg$total1, type='n', xlab='Check number', ylab='Mammalian catch')
+for(i in 1:3)
+{
+  tt <- ttAgg[ttAgg$bait.type==oils[i],]
+  tt <- tt[rep(1:nrow(tt), ceiling(0.1+tt$age/4)),]
+  tt[grep('\\.1', rownames(tt)),] <- NA
+#  points(tt[,'check'], tt[,'total1'], col=ttCol[i], pch=16)
+  text(tt[,'check'], tt[,'total1'], tt[,'age'], col=ttCol[i], cex=1.2)
+  lines(tt[,'check'], tt[,'total1'], col=ttCol[i], lwd=2)
+}
+legend('topleft', oils, lty=1, lwd=2, col=ttCol,)
+```
+
+```{r, mthAllCatch, fig.height=4, fig.cap="\\label{mthAllCatch}Mammalian catches and tripped and empty for each monthly check summed by lure type.  The lines are colour-code to represent the different lures, and the age of the lure (in months) is indicated at each point."}
+par(mar=c(3,3,0.5,2), las=1, mgp=c(2.2, 0.8, 0), xpd=TRUE)
+oils <- c('Blood oil','Meat oil','Salmon oil')
+ttCol <- c('blue','green4','salmon')
+plot(ttAgg$check, ttAgg$total2, type='n', xlab='Check number', ylab='Mammalian catch + TE')
+for(i in 1:3)
+{
+  tt <- ttAgg[ttAgg$bait.type==oils[i],]
+  tt <- tt[rep(1:nrow(tt), ceiling(0.1+tt$age/4)),]
+  tt[grep('\\.1', rownames(tt)),] <- NA
+#  points(tt[,'check'], tt[,'total2'], col=ttCol[i], pch=16)
+  text(tt[,'check'], tt[,'total2'], tt[,'age'], col=ttCol[i], cex=1.2)
+  lines(tt[,'check'], tt[,'total2'], col=ttCol[i], lwd=2)
+}
+legend('topleft', oils, lty=1, lwd=2, col=ttCol,)
+```
+
+## Discussion
+
+These data suggest that changing lures every four months is sufficiently frequent.  Indeed, it may even be possible to extend the interval between changes.  However, there is little advantage in doing so at Maruia.
+
+## Comparison of Lake Daniell lines with Alfred 4x4 and Pell Terrace
+
+```{r comparison}
+ttTab <- table(tlAPPY$V22, tlAPPY$species.caught)
+compPY <- merge(cbind(ttTab[,'Rat'], ttTab[, 'Stoat'], check=1:nrow(ttTab)),
+                aggregate(tlPY[, c('rat','stoat')], list(tlPY$V22), sum),
+                by.x='row.names', by.y='Group.1')
+compPY <- compPY[order(compPY$check),]
+
+ttTab <- table(tlAP$V22, tlAP$species.caught)
+comp <- merge(cbind(ttTab[, 'Rat'], ttTab[, 'Stoat'], check=1:nrow(ttTab)),
+              aggregate(tl[, c('rat','stoat')], list(tl$V22), sum),
+              by.x='row.names', by.y='Group.1')
+comp <- comp[order(comp$check),]
+
+# comp <- rbind(compPY, comp)
+# names(comp) <- c('month','ratAP','stoatAP','check','ratLD','stoatLD')
+```
+
+```{r priorYears}
+annCatch <- cbind(year=2018:2021,
+                 ratAP=100*c(134,336,386,37)/84, stoatAP=100*c(21,10,33,18)/84,
+                 ratLD=100*c(115,430,491,45)/104, stoatLD=100*c(12,9,24,9)/104)
+tt <- cbind(year=2022:2023,
+           ratAP=100*c(sum(compPY$V1), sum(comp$V1))/84,
+           stoatAP=100*c(sum(compPY$V2), sum(comp$V2))/84,
+           ratAP=100*c(sum(compPY$rat), sum(comp$rat))/100,
+           stoatAP=100*c(sum(compPY$stoat), sum(comp$stoat))/100)
+
+annCatch <- rbind(annCatch, tt)
+```
+
+```{r compTab, echo=FALSE}
+kable(round(annCatch), 'latex', booktabs=TRUE,
+      caption='\\label{compTab}Total annual catch per 100 traps of rats and stoats for Alfred+Pell and Lake Daniell lines. Note: 2023 data is year to date.') %>%
+  kable_styling(latex_options="hold_position") %>%
+  # column_spec(length(stdStat)+4, bold=TRUE, color='blue') %>%
+  row_spec(c(-1,0)+nrow(annCatch), color='blue')
+```
+
+There are four years' of data prior to the start of the trial (2018-2021 inclusive).  For three of these years (2019-2021), the rat catches of the Alfred+Pell (AP) lines were very similar to those of the Lake Daniell (LD) lines (Table \ref{compTab}).  However, in 2018 the LD rat catch was only about three quarters of the AP lines.  Stoat catches were generally lower in the LD lines compared to the AP lines during these years.
+
+Since the beginning of the trial (2022), the LD rat catch has been about three quarters of the AP lines (i.e., similar to 2018) and the stoat catches continue to be lower.  Thus, there is some evidence that the trial regime may not be as effective as the existing one, but it is far from conclusive.
