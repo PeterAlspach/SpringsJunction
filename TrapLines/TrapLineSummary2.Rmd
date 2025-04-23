@@ -46,6 +46,7 @@ stdCodeLetters <- function(codes=tl$code, cT=convTable)
 
 ```{r readData}
 # Read the data
+beginAt <- 22 # day in month at which to begin recording periods. Good options are 10/11 and 22/23
 tl <- getTrapNZData()
 yr <- tl$yr
 tl <- tl$tl
@@ -58,7 +59,6 @@ tl$code <- stdCodeLetters()
 ```{r getReady}
 # Set the cut-off dates for the monthly intervals
 lastDate <- sort(tl$date, decreasing=TRUE)[1]
-beginAt <- 22 # Good options are 10/11 and 22/23
 obsMth <- setCutDates(beginAt, yr, tl$jDay)
 mth <- max(as.numeric(obsMth), na.rm=TRUE)
 
@@ -82,7 +82,7 @@ tlPY$code <- stdCodeLetters(tlPY$code)
 obsMthPY <- setCutDates(beginAt, yr-1, tlPY$jDay)
 ```
 
-The following tables give a summary of the catches^[Actually, the catch is not of primary interest as the objective of the trapping is to help protect native species (i.e., birds, bats and insects) from predation.  Thus, the desired outcome is an increase in the population of these species.  However, this is difficult to monitor.] from the `r length(unique(tl[-grep(' trap2', tl$code), 'code']))` trap boxes^[On some lines (Maruia River, Kellys, and parts of both the State Highway and Fergusons Flat) each box contains two traps.  Thus, on these lines it is possible to catch two mammals per trap box.] on the `r length(unique(tl$line))` trap-lines at Maruia.  The intention is to check the traps monthly around the change of the month, hence monthly summaries are aggregated beginning at the `r beginAt`^th^ of the month (inclusive).
+The following gives a summary of the catches^[Actually, the catch is not of primary interest as the objective of the trapping is to help protect native species (i.e., birds, bats and insects) from predation.  Thus, the desired outcome is an increase in the population of these species.  However, this is difficult to monitor.] from the `r length(unique(tl[-grep(' trap2', tl$code), 'code']))` trap boxes^[On some lines (Maruia River, Kellys, and parts of both the State Highway and Fergusons Flat) each box contains two traps.  Thus, on these lines it is possible to catch two mammals per trap box.] on the `r length(unique(tl$line))` trap-lines at Maruia.  The intention is to check the traps monthly around the change of the month, hence monthly summaries are aggregated beginning at the `r beginAt`^th^ of the month (inclusive).
 
 The summary is for the most recent monthly interval (i.e., that beginning on `r unique(obsMth[tl$jDay==max(tl$jDay)])`) in `r yr` and also the entire year-to-date.
 
@@ -343,7 +343,12 @@ catch12m <- catch12m[,-1]
 ```
 
 ```{r trapCoords}
-load('TrapCoordinates.RData') # Waypoints (saved by TrapLocations.Rmd)
+load('TrapCoordinates.RData') # Waypoints
+# To load a new coordinates file:
+  # * save the GPX file
+  # * use an online converter to change it to a csv file
+  # * edit in LibreOffice
+  # * then read into R.
 
 # Rename code to match Waypoints
 trap <- row.names(catch12m)

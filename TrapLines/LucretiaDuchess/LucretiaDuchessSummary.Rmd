@@ -1,0 +1,197 @@
+---
+title: "Lucretia/Duchess Trap-lines: Monthly Summary"
+author: "Peter Alspach"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  pdf_document:
+  # html_document:
+  # html_notebook:
+  theme: spacelab
+toc: yes
+toc_depth: 5
+# toc_float: yes
+# code_folding: hide
+---
+  
+
+  <!-- Mammals are defined at the end of the 'getReady' chunk (about line 45) -->
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, cache=FALSE, error=TRUE)
+library(knitr)
+library(kableExtra)
+library(jpeg)
+library(TraplineTools)
+
+setwd('~/GitHub/SpringsJunction/TrapLines/LucretiaDuchess') # set appropriate working directory
+```
+
+## Introduction
+
+```{r readData}
+# Read the data
+tl <- getTrapNZData(trapType=c('DOC 150', 'Trapinator'))
+yr <- tl$yr
+tl <- rbind(tl$tlOld, tl$tl)
+tl[grep('Rat', tl$species.caught), 'species.caught'] <- 'Rat' # don't distinguish rat species 
+# # Check for errors and correct (run manually)
+# table(tl$species.caught, tl$trap.type)
+tt <- tl[tl$species.caught=='Magpie', c('code', 'date')]
+tl[tl$code %in% substring(tt[1],1,4) & tl$date %in% tt[2],c('species.caught','status')] <- c('Mouse','Sprung')
+tl[tl$species.caught=='Magpie', c('species.caught','status')] <- c('None','Still set, bait OK')
+
+tl[tl$species.caught=='Peafowl', 'species.caught'] <- 'Mouse'
+
+tl[tl$species.caught=='Possum' & tl$trap.type=='DOC 150', c('species.caught','status')] <-
+  c('None','Still set, bait OK')
+
+tl[tl$species.caught!='None' & tl$status=='Still set, bait OK', 'status'] <- 'Sprung'
+tl[tl$species.caught!='None' & tl$strikes==0, 'strikes'] <- 1
+```
+
+```{r getReady}
+# Set the standard trap status of interest
+stdStat <- c('Sprung','Possum','Rat','Mouse','Stoat','Weasel') # standard trap status
+allMammals <- c('Possum','Rat','Stoat','Weasel','Cat','Ferret','Mouse','Rabbit','Hedgehog','Hare')
+```
+
+The following gives a summary of the catches^[Actually, the catch is not of primary interest as the objective of the trapping is to help protect native species (i.e., birds, bats and insects) from predation.  Thus, the desired outcome is an increase in the population of these species.  However, this is difficult to monitor.] from the `r length(unique(tl[tl$trap.type=='DOC 150', 'code']))` DOC 150 trap boxes, and `r length(unique(tl[tl$trap.type=='Trapinator', 'code']))` Trapinators on `r length(unique(tl$line))` trap-lines (`r unique(tl$line)`) of the Doubtless Conservation Trust.  The intention is to check the traps monthly (approximately).
+
+The summary is for the most recent check and the entire year-to-date, with the previous year shown for comparison.
+
+
+```{r consolidateAll}
+# It might be useful to have a summary table of the total catch for both lines.  This and the next
+# code chunk could do that
+catchBoth <- consolidateByDate(groupBy=NULL)
+catchBoth <- catchBoth[-nrow(catchBoth),]
+maxTrap <- max(catchBoth[,'nTrap'])
+catchBoth <- combineRecords(catchBoth)
+catchBoth[catchBoth[,'nTrap'] > maxTrap, 'nTrap'] <- maxTrap
+catchBoth <- rbind(catchBoth, TOTAL=apply(catchBoth, 2, sum))
+
+catch <- consolidateByDate()
+for (i in 1:length(catch))
+{
+  catch[[i]] <- catch[[i]][-nrow(catch[[i]]),]
+  maxTrap <- max(catch[[i]][,'nTrap'])
+  catch[[i]] <- combineRecords(catch[[i]])
+  catch[[i]][catch[[i]][,'nTrap'] > maxTrap, 'nTrap'] <- maxTrap 
+  catch[[i]] <- rbind(catch[[i]], TOTAL=apply(catch[[i]], 2, sum))
+}
+```
+
+```{r totalCatchToDate}
+# 
+# # kable(catch[, 1:(length(stdStat)+3)]) %>%
+# #   kable_styling(full_width=FALSE) %>%
+# kable(catch[, 1:(length(stdStat)+3)], 'latex', booktabs=TRUE,
+#       caption="\\label{currMthN}Current month's mammalian catch for each line. Note: nTrap is the number of functioning trap boxes (i.e., missing and non-functioning traps have been omitted).") %>%
+#   kable_styling(latex_options="hold_position") %>%
+#   column_spec(length(stdStat)+4, bold=TRUE, color='blue') %>%
+#   column_spec(2, color='gray') %>%
+#   column_spec(4:7, color='blue') %>%
+#   row_spec(nrow(catch), bold=TRUE, background="#e5e5e5")
+```
+
+### Mammals caught by date
+
+Not all traps were checked on the same day, although they were usually checked within a few days of one another.  To facilitate the data summary, checks done within five days of one another were added together and assigned to the first date^[Since the interval between checks varies considerably, it would be better to modify the catch numbers to reflect this.  Simply dividing the catch per trap by the number of days since the previous check is inadequate, since once a trap has been sprung it is inactive for the remainder of the period.  At some point, I intend to modify the code to reflect this.].
+
+Figure \ref{mthCatchBFig} shows the catch per month summed over both lines for all mammals (total), rodents (rats and mice), mustelids (stoats, weasels and ferrets), and possums.  The figure includes the previous year's results for comparison.  Figure \ref{mthCatchFig} is similar, except that each line x trap type combination is plotted separately.
+
+
+```{r, mthCatchBFig, fig.height=4, fig.cap="\\label{mthCatchBFig}Trap catches summed over both lines for each check date. Previous year represented by dashed lines with the same colour coding.  Note: 'mustelid' includes ferrets (if present).  The number of traps checked is shown at the top of the figure (the previous year first, and then the current year)"}
+par(mfrow=c(1,1), mar=c(3,3,0.5,2), las=1, mgp=c(2.2, 0.8, 0), xpd=TRUE)
+
+plotCatchByDate(catchBoth)
+```
+
+```{r mthCatchFig, fig.height=4, fig.cap="\\label{mthCatchFig}Trap catches for each line x trap type combination for each check date. Previous year represented by dashed lines with the same colour coding (i.e., black: Total, gray: Rodents, brown: Mustelid, and blue: Possum).  Note: 'mustelid' includes ferrets (if present).  The number of traps checked is shown at the top of the figures (the previous year first, and then the current year)"}
+par(mfrow=c(2,2), mar=c(3,3,1,2), oma=c(0,0,0,0), las=1, mgp=c(2.2, 0.8, 0), xpd=TRUE)
+plotCatchByDate(catch[[1]], c('Rat','Mouse','Stoat','Weasel'))
+title('Duchess DOC150', line=1, cex.main=0.9, font.main=1, adj=0)
+plotCatchByDate(catch[[2]], 'Possum', combine=NULL, total=FALSE)  
+title('Duchess Trapinator', line=1, cex.main=0.9, font.main=1, adj=0)
+plotCatchByDate(catch[[3]], c('Rat','Mouse','Stoat','Weasel'))  
+title('Lucretia DOC150', line=1, cex.main=0.9, font.main=1, adj=0)
+plotCatchByDate(catch[[4]], 'Possum', combine=NULL, total=FALSE)
+title('Lucretia Trapinator', line=1, cex.main=0.9, font.main=1, adj=0)
+```
+
+\pagebreak
+
+### Mammals caught by trap location
+
+It might be interesting to see which traps have been catching mammals since `r min(as.Date(row.names(catchBoth)), na.rm=TRUE)`.  This is depicted in Figure \ref{mthTrapCatch1}.
+
+```{r coordinates}
+# To create a new coordinates file:
+  # * save the GPX file
+  # * use an online converter to change it to a csv file
+  # * edit in LibreOffice
+  # * then read into R.
+# lucretiaDuchess <- read.csv('LucretiaDuchessTraps.csv')
+# save(lucretiaDuchess, file='TrapCoordinates.RData')
+
+load('TrapCoordinates.RData') # Waypoints
+
+# Merge trapLoc with catch12m
+doc150 <- tl[tl$trap.type=='DOC 150',]
+doc150 <- tapply(doc150[, 'strikes'], doc150[, c('date','code')], sum, na.rm=TRUE)
+doc150 <- t(combineRecords(doc150))
+doc150 <- merge(doc150, lucretiaDuchess, by.x='row.names', by.y='name')
+
+trapinator <- tl[tl$trap.type=='Trapinator',]
+trapinator$code <- substring(trapinator$code, 1, 4)
+trapinator <- tapply(trapinator[, 'strikes'], trapinator[, c('date','code')], sum, na.rm=TRUE)
+trapinator <- t(combineRecords(trapinator))
+trapinator <- merge(trapinator, lucretiaDuchess, by.x='row.names', by.y='name')
+```
+
+```{r mthTrapCatch1, fig.height=6, fig.width=8, fig.cap="\\label{mthTrapCatch1}Map of the Lucretia and Duchess trap catches (DOC 150 on the left, and Trapinator on the right).  The point diameters are proportional to the cumulative catch.  The grey + signs indicate the trap locations (necessary for traps which have caught nothing during the period).  The topographical map overlay is approximate only."}
+# par(mar=rep(0, 4), mfrow=c(1,2))
+par(mfrow=c(1,2))
+myMap <- readJPEG('LucretiaDuchess.jpg')
+# ttCols <- viridisLite::inferno(ncol(doc150)-3)
+
+# for (lns in 1:length(lineGrps))
+par(mar=c(0,0,0,0.1))
+with(doc150, plot(X, Y, type='n', axes=FALSE, xlab='', ylab=''))
+ttUsr <- par()$usr
+rasterImage(myMap, ttUsr[1]-0.007, ttUsr[3]-0.004, ttUsr[2]+0.006, ttUsr[4]+0.002)
+with(doc150, points(X, Y, pch=3, cex=0.7, col='grey50'))
+for (i in c('ND','NL'))
+{
+  tt <- doc150[substring(doc150[,'Row.names'], 1, 2)==i,]
+  tt <- tt[, apply(tt, 2, function(x) length(x[!is.na(x)]))!=0]
+  tt[, 2:(ncol(tt)-2)] <- t(apply(tt[, 2:(ncol(tt)-2)], 1, cumsum))
+  points(tt[,'X'], tt[,'Y'], cex=tt[, ncol(tt)-2]*2/3)
+  # points(doc150[ttLines[,i]!=0, c('X', 'Y')], pch=16, col=ttCols[ncol(catch12m)+1-i],
+  #        cex=ttCum[ttLines[,i]!=0, i]/2)
+}
+
+par(mar=c(0,0.1,0,0))
+with(doc150, plot(X, Y, type='n', axes=FALSE, xlab='', ylab=''))
+ttUsr <- par()$usr
+rasterImage(myMap, ttUsr[1]-0.007, ttUsr[3]-0.004, ttUsr[2]+0.006, ttUsr[4]+0.002)
+with(trapinator, points(X, Y, pch=3, cex=0.7, col='grey50'))
+for (i in c('ND','NL'))
+{
+  tt <- trapinator[substring(trapinator[,'Row.names'], 1, 2)==i,]
+  tt <- tt[, apply(tt, 2, function(x) length(x[!is.na(x)]))!=0]
+  tt[, 2:(ncol(tt)-2)] <- t(apply(tt[, 2:(ncol(tt)-2)], 1, cumsum))
+  points(tt[,'X'], tt[,'Y'], cex=tt[, ncol(tt)-2]*2/3)
+  # points(doc150[ttLines[,i]!=0, c('X', 'Y')], pch=16, col=ttCols[ncol(catch12m)+1-i],
+  #        cex=ttCum[ttLines[,i]!=0, i]/2)
+}
+# lCols <- c(ALF='magenta', LD='blue', LDT='darkred', PS='red', RDS='green')
+# for (i in c('ND','NL'))
+# {
+#   with(ttLines[gsub('[[:digit:]]', '', ttLines$Trap)==i,], lines(E, S, col=lCols[i]))
+# }
+legend('bottom', legend=c('1 catch', '2 catches', '3 catches', '5 catches'),
+       pt.cex=c(1, 2, 3, 5)*2/3, pch=1, pt.lwd=2, bty='n')
+# legend('top', legend=c('Current', '3 months ago', '6 months ago', '9 months ago', '12 months ago'),
+#        pch=16, col=ttCols[c(1,3,6,9,12)], bty='n')
+```
