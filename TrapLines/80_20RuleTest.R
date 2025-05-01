@@ -1,8 +1,8 @@
 # This code will eventually check the 80:20 rule
 library(TraplineTools)
 
-tl <- getTrapData()$tl # current year's data
-tlPY <- getTrapData('TrapCatches2019.csv')$tl # previous year's data
+tl <- getTrapData(trapType='DOC 200')$tl # current year's data
+tlPY <- getTrapData('TrapCatches2019.csv', trapType='DOC 200')$tl # previous year's data
 tl <- rbind(tlPY, tl) # combine the two years 
 
 tl$Trap.No <- paste(tl$Tag.No, tl$Trap.No, sep=':') # combine Tag and Trap numbers

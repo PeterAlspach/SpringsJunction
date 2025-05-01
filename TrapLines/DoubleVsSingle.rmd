@@ -54,11 +54,11 @@ allMammals <- c('Rat','Stoat','Weasel','Cat','Ferret','Mouse','Rabbit','Hedgehog
 
 ```{r readDataPYs}
 # Read the data for the previous years
-tl22 <- getTrapNZData(paste0('manage_trap_records', 2022, '.csv'))$tl
-tl21 <- getTrapNZData(paste0('manage_trap_records', 2021, '.csv'))$tl
-tl20 <- getTrapNZData(paste0('manage_trap_records', 2020, '.csv'))$tl
-tl19 <- getTrapNZData(paste0('manage_trap_records', 2019, '.csv'))$tl
-tl18 <- getTrapNZData(paste0('manage_trap_records', 2018, '.csv'))$tl
+tl22 <- getTrapNZData(paste0('manage_trap_records', 2022, '.csv'), trapType='DOC 200')$tl
+tl21 <- getTrapNZData(paste0('manage_trap_records', 2021, '.csv'), trapType='DOC 200')$tl
+tl20 <- getTrapNZData(paste0('manage_trap_records', 2020, '.csv'), trapType='DOC 200')$tl
+tl19 <- getTrapNZData(paste0('manage_trap_records', 2019, '.csv'), trapType='DOC 200')$tl
+tl18 <- getTrapNZData(paste0('manage_trap_records', 2018, '.csv'), trapType='DOC 200')$tl
 
 # Ensure all trap names correspond to those in trap.nz
 tl22$code <- stdCodeLetters(tl22$code)

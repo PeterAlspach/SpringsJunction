@@ -48,7 +48,7 @@ The lack of synchrony between the odd and even numbered traps means it is possib
 
 ```{r readData}
 # Read the data
-tl <- getTrapNZData()
+tl <- getTrapNZData(trapType='DOC 200')
 yr <- tl$yr
 tl <- tl$tl
 
@@ -68,7 +68,7 @@ allMammals <- c('Rat','Stoat','Weasel','Cat','Ferret','Mouse','Rabbit','Hedgehog
 
 ```{r readDataPY}
 # Read the data for the previous year
-tlPY <- getTrapNZData(paste0('manage_trap_records', yr-1, '.csv'))$tl
+tlPY <- getTrapNZData(paste0('manage_trap_records', yr-1, '.csv'), trapType='DOC 200')$tl
 
 # Ensure all trap names correspond to those in trap.nz
 tlPY$code <- stdCodeLetters(tlPY$code)

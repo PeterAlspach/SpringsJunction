@@ -55,7 +55,7 @@ stdStat <- c('Sprung','Possum','Rat','Mouse','Stoat','Weasel') # standard trap s
 allMammals <- c('Possum','Rat','Stoat','Weasel','Cat','Ferret','Mouse','Rabbit','Hedgehog','Hare')
 ```
 
-The following gives a summary of the catches^[Actually, the catch is not of primary interest as the objective of the trapping is to help protect native species (i.e., birds, bats and insects) from predation.  Thus, the desired outcome is an increase in the population of these species.  However, this is difficult to monitor.] from the `r length(unique(tl[tl$trap.type=='DOC 150', 'code']))` DOC 150 trap boxes, and `r length(unique(tl[tl$trap.type=='Trapinator', 'code']))` Trapinators on `r length(unique(tl$line))` trap-lines (`r unique(tl$line)`) of the Doubtless Conservation Trust.  The intention is to check the traps monthly (approximately).
+The following gives a summary of the catches^[Actually, the catch is not of primary interest as the objective of the trapping is to help protect native species (i.e., birds, bats and insects) from predation.  Thus, the desired outcome is an increase in the population of these species.  Birds are being monitored via 5-minute bird counts, but reporting on those is not the purpose of this summary.] from the `r length(unique(tl[tl$trap.type=='DOC 150', 'code']))` DOC 150 trap boxes, and `r length(unique(tl[tl$trap.type=='Trapinator', 'code']))` Trapinators on `r length(unique(tl$line))` trap-lines (`r unique(tl$line)`) of the Doubtless Conservation Trust.  The intention is to check the traps monthly (approximately).
 
 The summary is for the most recent check and the entire year-to-date, with the previous year shown for comparison.
 
@@ -149,13 +149,10 @@ trapinator <- t(combineRecords(trapinator))
 trapinator <- merge(trapinator, lucretiaDuchess, by.x='row.names', by.y='name')
 ```
 
-```{r mthTrapCatch1, fig.height=6, fig.width=8, fig.cap="\\label{mthTrapCatch1}Map of the Lucretia and Duchess trap catches (DOC 150 on the left, and Trapinator on the right).  The point diameters are proportional to the cumulative catch.  The grey + signs indicate the trap locations (necessary for traps which have caught nothing during the period).  The topographical map overlay is approximate only."}
-# par(mar=rep(0, 4), mfrow=c(1,2))
+```{r mthTrapCatch1, fig.height=6, fig.width=8, fig.cap="\\label{mthTrapCatch1}Map of the Lucretia and Duchess trap catches (DOC 150 on the left, and Trapinator on the right).  The point diameters are proportional to the cumulative catches, and their colours code for when the catches occurred.  The grey + signs indicate the trap locations (necessary for traps which have caught nothing during the period).  The topographical map overlay is approximate only."}
 par(mfrow=c(1,2))
 myMap <- readJPEG('LucretiaDuchess.jpg')
-# ttCols <- viridisLite::inferno(ncol(doc150)-3)
 
-# for (lns in 1:length(lineGrps))
 par(mar=c(0,0,0,0.1))
 with(doc150, plot(X, Y, type='n', axes=FALSE, xlab='', ylab=''))
 ttUsr <- par()$usr
@@ -166,10 +163,19 @@ for (i in c('ND','NL'))
   tt <- doc150[substring(doc150[,'Row.names'], 1, 2)==i,]
   tt <- tt[, apply(tt, 2, function(x) length(x[!is.na(x)]))!=0]
   tt[, 2:(ncol(tt)-2)] <- t(apply(tt[, 2:(ncol(tt)-2)], 1, cumsum))
-  points(tt[,'X'], tt[,'Y'], cex=tt[, ncol(tt)-2]*2/3)
-  # points(doc150[ttLines[,i]!=0, c('X', 'Y')], pch=16, col=ttCols[ncol(catch12m)+1-i],
-  #        cex=ttCum[ttLines[,i]!=0, i]/2)
+  # points(tt[,'X'], tt[,'Y'], cex=tt[, ncol(tt)-2]*2/3)
+  ttCols <- as.numeric(as.Date(colnames(tt)[2:(ncol(tt)-2)]))
+  ttCols <- 1+ttCols[length(ttCols)]-ttCols
+  legCols <- viridisLite::inferno(ttCols[1])[1+c(0,120,240,360)] # legend colours
+  ttCols <- viridisLite::inferno(ttCols[1])[ttCols]
+  for (j in length(ttCols):1)
+  {
+    points(tt[tt[,j+1]!=0, c('X', 'Y')], pch=16, col=ttCols[j],
+           cex=tt[tt[,j+1]!=0, j+1]*2/3)
+  }  
 }
+legend('bottom', legend=c('Current', '~4 months ago', '~8 months ago', '~12 months ago'),
+       col=legCols, pt.cex=2, pch=16, bty='n')
 
 par(mar=c(0,0.1,0,0))
 with(doc150, plot(X, Y, type='n', axes=FALSE, xlab='', ylab=''))
@@ -181,17 +187,18 @@ for (i in c('ND','NL'))
   tt <- trapinator[substring(trapinator[,'Row.names'], 1, 2)==i,]
   tt <- tt[, apply(tt, 2, function(x) length(x[!is.na(x)]))!=0]
   tt[, 2:(ncol(tt)-2)] <- t(apply(tt[, 2:(ncol(tt)-2)], 1, cumsum))
-  points(tt[,'X'], tt[,'Y'], cex=tt[, ncol(tt)-2]*2/3)
-  # points(doc150[ttLines[,i]!=0, c('X', 'Y')], pch=16, col=ttCols[ncol(catch12m)+1-i],
-  #        cex=ttCum[ttLines[,i]!=0, i]/2)
+  # points(tt[,'X'], tt[,'Y'], cex=tt[, ncol(tt)-2]*2/3)
+  ttCols <- as.numeric(as.Date(colnames(tt)[2:(ncol(tt)-2)]))
+  ttCols <- 1+ttCols[length(ttCols)]-ttCols
+  ttCols <- viridisLite::inferno(ttCols[1])[ttCols]
+  for (j in length(ttCols):1)
+  {
+    points(tt[tt[,j+1]!=0, c('X', 'Y')], pch=16, col=ttCols[j],
+           cex=tt[tt[,j+1]!=0, j+1]*2/3)
+  }  
 }
-# lCols <- c(ALF='magenta', LD='blue', LDT='darkred', PS='red', RDS='green')
-# for (i in c('ND','NL'))
-# {
-#   with(ttLines[gsub('[[:digit:]]', '', ttLines$Trap)==i,], lines(E, S, col=lCols[i]))
-# }
+# This legend is for DOC150, and thus the code assumes that the first and last checks for the DOC150s and
+# Trapinators were conducted at (roughly) the same time
 legend('bottom', legend=c('1 catch', '2 catches', '3 catches', '5 catches'),
        pt.cex=c(1, 2, 3, 5)*2/3, pch=1, pt.lwd=2, bty='n')
-# legend('top', legend=c('Current', '3 months ago', '6 months ago', '9 months ago', '12 months ago'),
-#        pch=16, col=ttCols[c(1,3,6,9,12)], bty='n')
 ```

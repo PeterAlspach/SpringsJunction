@@ -20,7 +20,7 @@ library(maptools)
 ```
 This code reads the trap locations (longitudes and latitudes) from the GPS waypoint files, and saves them as an R dataset for later use.
 
-It is now deprecated.  To update the trap coordinates it is easiest to load the existing file (load('TrapCoordinates.RData')) and modify it.
+It is now deprecated.  To update the trap coordinates it is easiest to load the existing file (load('TrapCoordinates.RData')) and modify it.  To load a new coordinates file: save the GPX file, use an online converter to change it to a csv file, edit in LibreOffice, then read into R.
 
 ```{r readWayPts, include=FALSE}
 # Read the .gpx files
